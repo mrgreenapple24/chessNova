@@ -1,35 +1,45 @@
 #include "polyglot.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <arpa/inet.h> /* For ntohs/ntohl on Unix-like systems */
+#ifdef _WIN32
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    #include <arpa/inet.h> /* For ntohs/ntohl on Unix-like systems */
+#endif
 #include <stdbool.h>
+
+#if defined(_WIN32)
+    /* Windows uses Winsock which provides ntohl/ntohs */
+    #define bswap64(x) _byteswap_uint64(x)
+    #define bswap32(x) ntohl(x)
+    #define bswap16(x) ntohs(x)
+#elif defined(__linux__) || defined(__APPLE__)
+    #include <endian.h>
+    #define bswap64(x) be64toh(x)
+    #define bswap32(x) be32toh(x)
+    #define bswap16(x) be16toh(x)
+#else
+    /* Fallback for other systems */
+    static uint64_t bswap64(uint64_t x) {
+        return ((x & 0x00000000000000FFULL) << 56) |
+               ((x & 0x000000000000FF00ULL) << 40) |
+               ((x & 0x0000000000FF0000ULL) << 24) |
+               ((x & 0x00000000FF000000ULL) << 8) |
+               ((x & 0x000000FF00000000ULL) >> 8) |
+               ((x & 0x0000FF0000000000ULL) >> 24) |
+               ((x & 0x00FF000000000000ULL) >> 40) |
+               ((x & 0xFF00000000000000ULL) >> 56);
+    }
+    #define bswap32(x) ntohl(x)
+    #define bswap16(x) ntohs(x)
+#endif
 
 #ifdef _MSC_VER
 #  define U64(u) (u##ui64)
 #else
 #  define U64(u) (u##ULL)
-#endif
-
-/* Endianness helpers for big-endian Polyglot files */
-#if defined(__linux__) || defined(__APPLE__)
-#include <endian.h>
-#define bswap64(x) be64toh(x)
-#define bswap32(x) be32toh(x)
-#define bswap16(x) be16toh(x)
-#else
-/* Fallback for other systems */
-static uint64_t bswap64(uint64_t x) {
-    return ((x & 0x00000000000000FFULL) << 56) |
-           ((x & 0x000000000000FF00ULL) << 40) |
-           ((x & 0x0000000000FF0000ULL) << 24) |
-           ((x & 0x00000000FF000000ULL) << 8) |
-           ((x & 0x000000FF00000000ULL) >> 8) |
-           ((x & 0x0000FF0000000000ULL) >> 24) |
-           ((x & 0x00FF000000000000ULL) >> 40) |
-           ((x & 0xFF00000000000000ULL) >> 56);
-}
-#define bswap32(x) ntohl(x)
-#define bswap16(x) ntohs(x)
 #endif
 
 char book_file_path[256] = "book.bin";

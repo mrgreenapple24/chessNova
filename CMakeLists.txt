@@ -7,18 +7,23 @@ project(chess_engine LANGUAGES C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Compile flags (Equivalent to CFLAGS)
-# Note: CMake handles -MMD -MP automatically for dependency tracking
+# Cross-platform compiler flags
 if(MSVC)
-  # Strong warnings for Microsoft Visual C++
+  # Windows / MSVC
   add_compile_options(/W4)
-else()
-  # Strong warnings for GCC and Clang
+elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  # Linux, macOS, MinGW, etc.
   add_compile_options(-Wall -Wextra)
-endif()
 
-# Include directories (Equivalent to -Iinclude)
-include_directories(include)
+  # Platform-specific flags
+  if(APPLE)
+    # macOS specific flags
+    add_compile_options(-mmacosx-version-min=10.12)
+  elseif(UNIX AND NOT APPLE)
+    # Linux specific flags
+    add_compile_options(-D_GNU_SOURCE)
+  endif()
+endif()
 
 # Gather Source Files
 file(GLOB ALL_SRCS "src/*.c")
@@ -37,8 +42,39 @@ add_executable(chess_engine ${ENGINE_SRCS})
 # Define the test executable
 add_executable(test_search ${TEST_SRCS})
 
-# Output directory configuration
-# This keeps the binary in a 'bin' folder within your build directory
+# Include directories (Must come AFTER add_executable)
+target_include_directories(chess_engine PRIVATE include)
+target_include_directories(test_search PRIVATE include)
+
+# Output directory configuration (works on all platforms)
 set_target_properties(chess_engine test_search PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
+
+# Platform-specific library linking and definitions
+if(WIN32)
+  # Link Winsock library for Windows sockets functions (ntohl, ntohs)
+  target_link_libraries(chess_engine ws2_32)
+  target_link_libraries(test_search ws2_32)
+
+  # Define Windows version for Winsock
+  target_compile_definitions(chess_engine PRIVATE _WIN32_WINNT=0x0601)
+  target_compile_definitions(test_search PRIVATE _WIN32_WINNT=0x0601)
+
+  message(STATUS "Windows detected - linking ws2_32.lib")
+elseif(APPLE)
+  message(STATUS "macOS detected")
+elseif(UNIX)
+  message(STATUS "Linux/Unix detected")
+endif()
+
+# Optional: Set debug/release flags for better cross-platform behavior
+if(NOT MSVC)
+  # For GCC/Clang - add debug symbols or optimization
+  set(CMAKE_C_FLAGS_DEBUG "-g -O0")
+  set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+endif()
+
+# Print platform information (helpful for debugging)
+message(STATUS "Building on: ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Compiler: ${CMAKE_C_COMPILER_ID}")
