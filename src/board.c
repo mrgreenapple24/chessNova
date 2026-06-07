@@ -49,7 +49,7 @@ void print_bitboard(U64 bitboard) {
         printf("  %d\n", rank + 1);
     }
     printf("\n a  b  c  d  e  f  g  h\n\n");
-    printf(" Bitboard: 0x%lx\n\n", bitboard);
+    printf(" Bitboard: 0x%llx\n\n", (unsigned long long)bitboard);
 }
 
 /**
@@ -82,7 +82,7 @@ void reset_board(Board *board) {
  */
 void parse_fen(const char *fen, Board *board) {
     reset_board(board);
-    
+
     int rank = RANK_8;
     int file = FILE_A;
 
@@ -288,7 +288,7 @@ bool make_move(Board *board, uint32_t move) {
 
     if (piece == wk) board->castle &= ~(WKCA | WQCA);
     else if (piece == bk) board->castle &= ~(BKCA | BQCA);
-    
+
     if (from == a1 || to == a1) board->castle &= ~WQCA;
     if (from == h1 || to == h1) board->castle &= ~WKCA;
     if (from == a8 || to == a8) board->castle &= ~BQCA;

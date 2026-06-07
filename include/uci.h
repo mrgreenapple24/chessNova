@@ -6,6 +6,6 @@
 void uci_loop();
 char* move_to_string(uint32_t move);
 uint32_t parse_move(char *ptr, Board *board);
-U64 get_time_ms();
+long long get_time_ms();
 
 #endif // UCI_H

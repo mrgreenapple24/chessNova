@@ -3,12 +3,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#ifdef _WIN32
+    #include <windows.h>
+    /* Windows timing using QueryPerformanceCounter */
+    static LARGE_INTEGER get_time_freq(void) {
+        LARGE_INTEGER freq;
+        QueryPerformanceFrequency(&freq);
+        return freq;
+    }
 
-U64 get_time_ms() {
-    struct timeval t;
-    gettimeofday(&t, NULL);
-    return (U64)t.tv_sec * 1000 + (U64)t.tv_usec / 1000;
+    static LARGE_INTEGER last_time;
+#else
+    #include <sys/time.h>
+#endif
+
+long long get_time_ms(void) {
+#ifdef _WIN32
+    LARGE_INTEGER freq, count;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&count);
+    return (count.QuadPart * 1000) / freq.QuadPart;
+#else
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long long)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#endif
 }
 
 char* move_to_string(uint32_t move) {

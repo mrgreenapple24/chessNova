@@ -61,6 +61,9 @@ if(WIN32)
   target_compile_definitions(chess_engine PRIVATE _WIN32_WINNT=0x0601)
   target_compile_definitions(test_search PRIVATE _WIN32_WINNT=0x0601)
 
+  target_compile_definitions(chess_engine PRIVATE _CRT_SECURE_NO_WARNINGS)
+  target_compile_definitions(test_search PRIVATE _CRT_SECURE_NO_WARNINGS)
+
   message(STATUS "Windows detected - linking ws2_32.lib")
 elseif(APPLE)
   message(STATUS "macOS detected")

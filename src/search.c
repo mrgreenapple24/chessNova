@@ -6,7 +6,7 @@
  * Checks if the search should be stopped due to time or other conditions.
  */
 static void check_up(SearchInfo *info) {
-    if (info->timeset && get_time_ms() > info->stoptime) {
+    if (info->timeset && get_time_ms() > (long long)info->stoptime) {
         info->stopped = 1;
     }
 }
@@ -16,10 +16,10 @@ static void check_up(SearchInfo *info) {
  */
 static int has_non_pawn_material(const Board *board) {
     if (board->side == white) {
-        return board->bitboards[wn] || board->bitboards[wb] || 
+        return board->bitboards[wn] || board->bitboards[wb] ||
                board->bitboards[wr] || board->bitboards[wq];
     } else {
-        return board->bitboards[bn] || board->bitboards[bb] || 
+        return board->bitboards[bn] || board->bitboards[bb] ||
                board->bitboards[br] || board->bitboards[bq];
     }
 }
@@ -144,9 +144,9 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
 
         int score;
         // --- Late Move Reductions ---
-        if (legal_moves > 4 && depth >= 3 && !in_check && 
+        if (legal_moves > 4 && depth >= 3 && !in_check &&
             !(move & MFLAG_CAP) && GET_PROMOTED(move) == EMPTY) {
-            
+
             // Check if the move gives check
             U64 enemy_king_bb = board->bitboards[(board->side == white) ? wk : bk];
             if (enemy_king_bb) {
@@ -176,7 +176,7 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
             if (!(move & MFLAG_CAP)) {
                 info->killer_moves[1][board->ply] = info->killer_moves[0][board->ply];
                 info->killer_moves[0][board->ply] = move;
-                
+
                 int piece = board->pieces[GET_FROM(move)];
                 int to = GET_TO(move);
                 info->history_moves[piece][to] += depth * depth;
@@ -237,9 +237,9 @@ uint32_t search_best_move(Board *board, SearchInfo *info) {
         best_move = depth_best_move;
         best_score = depth_best_score;
 
-        printf("info score cp %d depth %d nodes %lu time %lu\n", 
-               best_score, current_depth, info->nodes, get_time_ms() - info->starttime);
-        
+        printf("info score cp %d depth %d nodes %llu time %llu\n",
+               best_score, current_depth, (unsigned long long)info->nodes, (unsigned long long)get_time_ms() - (unsigned long long)info->starttime);
+
         if (best_score > MATE_SCORE - 100 || best_score < -MATE_SCORE + 100) break;
     }
 

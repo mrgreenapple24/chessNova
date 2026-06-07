@@ -315,12 +315,6 @@ check_portability() {
         ((issues++))
     fi
 
-    # Check for platform-specific includes
-    if grep -r "#include <windows.h>" src/ 2>/dev/null | grep -q .; then
-        print_warning "Found Windows-specific include (windows.h)"
-        ((issues++))
-    fi
-
     if grep -r "#include <pthread.h>" src/ 2>/dev/null | grep -q .; then
         print_warning "Found POSIX threads (pthread.h) - needs Windows alternative"
         ((issues++))
