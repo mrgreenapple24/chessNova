@@ -81,3 +81,6 @@ endif()
 # Print platform information (helpful for debugging)
 message(STATUS "Building on: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "Compiler: ${CMAKE_C_COMPILER_ID}")
+
+enable_testing()
+add_test(NAME test_search COMMAND test_search)
