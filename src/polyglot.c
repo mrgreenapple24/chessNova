@@ -2,53 +2,58 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-
-/* Platform-specific headers for endianness */
-#ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2tcpip.h>
-    #include <stdlib.h>  // for _byteswap_uint64
-    #pragma comment(lib, "ws2_32.lib")
-
-    #define bswap64(x) _byteswap_uint64(x)
-    #define bswap32(x) ntohl(x)
-    #define bswap16(x) ntohs(x)
-#elif defined(__APPLE__)
-    #include <arpa/inet.h>  // for ntohl/ntohs
-    #include <libkern/OSByteOrder.h>
-
-    #define bswap64(x) OSSwapInt64(x)
-    #define bswap32(x) ntohl(x)
-    #define bswap16(x) ntohs(x)
-#elif defined(__linux__)
-    #include <arpa/inet.h>
-    #include <endian.h>
-
-    #define bswap64(x) be64toh(x)
-    #define bswap32(x) be32toh(x)
-    #define bswap16(x) be16toh(x)
-#else
-    /* Fallback for other systems */
-    #include <arpa/inet.h>
-
-    static inline uint64_t bswap64(uint64_t x) {
-        return ((x & 0x00000000000000FFULL) << 56) |
-               ((x & 0x000000000000FF00ULL) << 40) |
-               ((x & 0x0000000000FF0000ULL) << 24) |
-               ((x & 0x00000000FF000000ULL) << 8) |
-               ((x & 0x000000FF00000000ULL) >> 8) |
-               ((x & 0x0000FF0000000000ULL) >> 24) |
-               ((x & 0x00FF000000000000ULL) >> 40) |
-               ((x & 0xFF00000000000000ULL) >> 56);
-    }
-    #define bswap32(x) ntohl(x)
-    #define bswap16(x) ntohs(x)
-#endif
+#include <stdint.h>
 
 #ifdef _MSC_VER
 #  define U64(u) (u##ui64)
 #else
 #  define U64(u) (u##ULL)
+#endif
+
+/* Endianness helpers for big-endian Polyglot files */
+
+#if defined(__APPLE__)
+
+#include <libkern/OSByteOrder.h>
+
+#define bswap64(x) OSSwapInt64(x)
+#define bswap32(x) OSSwapInt32(x)
+#define bswap16(x) OSSwapInt16(x)
+
+#elif defined(__linux__)
+
+#include <endian.h>
+
+#define bswap64(x) be64toh(x)
+#define bswap32(x) be32toh(x)
+#define bswap16(x) be16toh(x)
+
+#else
+
+/* Windows / generic fallback */
+
+static inline uint64_t bswap64(uint64_t x) {
+    return ((x & 0x00000000000000FFULL) << 56) |
+           ((x & 0x000000000000FF00ULL) << 40) |
+           ((x & 0x0000000000FF0000ULL) << 24) |
+           ((x & 0x00000000FF000000ULL) << 8)  |
+           ((x & 0x000000FF00000000ULL) >> 8)  |
+           ((x & 0x0000FF0000000000ULL) >> 24) |
+           ((x & 0x00FF000000000000ULL) >> 40) |
+           ((x & 0xFF00000000000000ULL) >> 56);
+}
+
+static inline uint16_t bswap16(uint16_t x) {
+    return (uint16_t)((x >> 8) | (x << 8));
+}
+
+static inline uint32_t bswap32(uint32_t x) {
+    return ((x & 0x000000FFU) << 24) |
+           ((x & 0x0000FF00U) << 8)  |
+           ((x & 0x00FF0000U) >> 8)  |
+           ((x & 0xFF000000U) >> 24);
+}
+
 #endif
 
 char book_file_path[256] = "book.bin";

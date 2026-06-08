@@ -6,8 +6,14 @@
 #include "polyglot.h"
 
 int main() {
-    init_magics();
-    uci_loop();
+    Board board;
+    board.bitboards[wp] = ((U64)1 << a5 | (U64)1 << d3);
+    board.bitboards[bp] = ((U64)1 << b6 | (U64)1 << c7);
+    print_bitboard(board.bitboards[wp]);
+    print_bitboard(board.bitboards[bp]);
+    print_bitboard(wHangingPawns(board.bitboards[wp],board.bitboards[bp]));
+    //init_magics();
+    //uci_loop();
     /*
     init_magics();
     init_evaluation_masks();
