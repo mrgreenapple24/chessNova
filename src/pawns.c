@@ -628,3 +628,35 @@ U64 wPawnsInfrontOwn (U64 wpawns) {return wpawns & wFrontspans(wpawns);}
 U64 wPawnsInfrontAndBehindOwn (U64 wpawns) {
    return wPawnsInfrontOwn(wpawns) &  wPawnsBehindOwn(wpawns);
 }
+
+U64 noNeighbourOnEastFile (U64 pawns)
+{
+   return pawns & ~westAttackFileFill(pawns);
+}
+
+U64 noNeighbourOnWestFile (U64 pawns) {
+    return pawns & ~eastAttackFileFill(pawns);
+}
+
+U64 isolanis(U64 pawns) {
+   return  noNeighbourOnEastFile(pawns)
+         & noNeighbourOnWestFile(pawns);
+}
+
+U64 halfIsolanis(U64 pawns) {
+   return  noNeighbourOnEastFile(pawns)
+         ^ noNeighbourOnWestFile(pawns);
+}
+
+U64 wOpenPawns(U64 wpawns, U64 bpawns) {
+   return wpawns & ~bFrontspans(bpawns);
+}
+
+U64 bOpenPawns(U64 bpawns, U64 wpawns) {
+   return bpawns & ~wFrontspans(wpawns);
+}
+
+U64 wHangingPawns(U64 wpawns, U64 bpawns)
+{
+   return wOpenPawns(wpawns,bpawns) & halfIsolanis(wpawns) & duo(wpawns);
+}
