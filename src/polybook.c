@@ -228,7 +228,7 @@ uint32_t GetBookMove(Board *board) {
     if (!use_book || entries == NULL || NumEntries == 0) return 0;
     
     unsigned short move;
-    const int MAXBOOKMOVES = 32;
+    enum { MAXBOOKMOVES = 32 };
     uint32_t bookMoves[MAXBOOKMOVES];
     int count = 0;
     

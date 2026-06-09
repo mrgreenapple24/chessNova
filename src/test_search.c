@@ -1,3 +1,8 @@
+/**
+ * @file test_search.c
+ * @brief Test suite for chessNova engine search accuracy.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,14 +19,21 @@
 #define NULL_DEVICE "/dev/null"
 #endif
 
+/** @brief File descriptor backup for stdout redirection. */
 int saved_stdout_fd = -1;
 
+/**
+ * @brief Mutes standard output (stdout) by redirecting it to the platform null device.
+ */
 void mute_stdout(void) {
     fflush(stdout);
     saved_stdout_fd = dup(1);
     freopen(NULL_DEVICE, "w", stdout);
 }
 
+/**
+ * @brief Restores standard output (stdout) from the saved file descriptor.
+ */
 void unmute_stdout(void) {
     if (saved_stdout_fd != -1) {
         fflush(stdout);
@@ -35,6 +47,16 @@ void unmute_stdout(void) {
     }
 }
 
+/**
+ * @brief Parses a FEN, executes a search to a given depth, and asserts that the chosen move matches expectations.
+ * 
+ * @param fen The FEN string to parse.
+ * @param depth The target search depth.
+ * @param expected_from The expected starting square of the best move.
+ * @param expected_to The expected target square of the best move.
+ * @param check_promoted If non-zero, asserts that a piece promotion occurred.
+ * @param description A brief explanation of the test case.
+ */
 void test_search(char *fen, int depth, int expected_from, int expected_to, int check_promoted, char *description) {
     Board board;
     parse_fen(fen, &board);
@@ -60,6 +82,14 @@ void test_search(char *fen, int depth, int expected_from, int expected_to, int c
     }
 }
 
+/**
+ * @brief Main execution entry for the engine search test suite.
+ * 
+ * Runs several test positions (Mate-in-1, hanging piece capture, defensive move, positional choice)
+ * and verifies search results. Prints a single success message to stdout on pass, or details to stderr on fail.
+ * 
+ * @return int Exit status (0 for success, 1 for failure).
+ */
 int main() {
     init_magics();
     init_evaluation_masks();

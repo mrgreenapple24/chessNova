@@ -1,3 +1,8 @@
+/**
+ * @file test_polybook.c
+ * @brief Test suite for Polyglot Zobrist hashing and opening book moves query functionality.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -16,17 +21,30 @@
 #define NULL_DEVICE "/dev/null"
 #endif
 
-// Declaration of internal function from polybook.c to test consistency
+/**
+ * @brief PolyKeyFromBoard is an internal function defined in polybook.c.
+ * Declared here for verification against polyglot_hash.
+ * 
+ * @param board Pointer to the Board structure.
+ * @return U64 The computed Zobrist hash key.
+ */
 U64 PolyKeyFromBoard(const Board *board);
 
+/** @brief File descriptor backup for stdout redirection. */
 int saved_stdout_fd = -1;
 
+/**
+ * @brief Mutes standard output (stdout) by redirecting it to the platform null device.
+ */
 void mute_stdout(void) {
     fflush(stdout);
     saved_stdout_fd = dup(1);
     freopen(NULL_DEVICE, "w", stdout);
 }
 
+/**
+ * @brief Restores standard output (stdout) from the saved file descriptor.
+ */
 void unmute_stdout(void) {
     if (saved_stdout_fd != -1) {
         fflush(stdout);
@@ -40,6 +58,13 @@ void unmute_stdout(void) {
     }
 }
 
+/**
+ * @brief Compares computed Polyglot and Polybook hash values for a given FEN string against the expected standard hash.
+ * 
+ * @param fen The FEN string to parse.
+ * @param expected_hash The expected standard Polyglot Zobrist hash.
+ * @param description A brief explanation of the test case.
+ */
 void test_hash(const char *fen, uint64_t expected_hash, const char *description) {
     Board board;
     parse_fen(fen, &board);
@@ -51,13 +76,21 @@ void test_hash(const char *fen, uint64_t expected_hash, const char *description)
         unmute_stdout();
         fprintf(stderr, "FAIL: %s\n", description);
         fprintf(stderr, "  FEN: %s\n", fen);
-        fprintf(stderr, "  Calculated Hash: 0x%016lX\n", hash);
-        fprintf(stderr, "  Expected Hash:   0x%016lX\n", expected_hash);
-        fprintf(stderr, "  Polybook Hash:   0x%016lX\n", key_from_polybook);
+        fprintf(stderr, "  Calculated Hash: 0x%016llX\n", (unsigned long long)hash);
+        fprintf(stderr, "  Expected Hash:   0x%016llX\n", (unsigned long long)expected_hash);
+        fprintf(stderr, "  Polybook Hash:   0x%016llX\n", (unsigned long long)key_from_polybook);
         exit(1);
     }
 }
 
+/**
+ * @brief Main execution entry for the Polyglot/Polybook test suite.
+ * 
+ * Runs four reference hash checks and tests the loading and query of book.bin.
+ * Prints a single success message to stdout on pass, or failure details to stderr on fail.
+ * 
+ * @return int Exit status (0 for success, 1 for failure).
+ */
 int main() {
     init_magics();
     init_evaluation_masks();

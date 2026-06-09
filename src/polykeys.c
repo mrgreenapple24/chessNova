@@ -1,3 +1,8 @@
+/**
+ * @file polykeys.c
+ * @brief Definition of standard Polyglot Zobrist hash random keys.
+ */
+
 #include "defs.h"
 #include "polykeys.h"
 
