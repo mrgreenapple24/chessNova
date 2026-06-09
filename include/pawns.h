@@ -93,4 +93,11 @@ uint8_t islandsEastfiles(U64 pawns);
 uint8_t islandsWestfiles(U64 pawns);
 uint8_t isolatedFiles(U64 pawns);
 int countIslands(U64 pawns);
+U64 noNeighbourOnEastFile (U64 pawns);
+U64 noNeighbourOnWestFile (U64 pawns);
+U64 isolanis(U64 pawns);
+U64 halfIsolanis(U64 pawns);
+U64 wOpenPawns(U64 wpawns, U64 bpawns);
+U64 bOpenPawns(U64 bpawns, U64 wpawns);
+U64 wHangingPawns(U64 wpawns, U64 bpawns);
 #endif
