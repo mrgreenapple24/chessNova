@@ -26,6 +26,8 @@ uint64_t polyglot_hash(Board *board);
  */
 uint32_t get_polyglot_move(Board *board);
 
-extern const uint64_t polyglot_random[781];
+void InitPolyBook(void);
+void CleanPolyBook(void);
+uint32_t GetBookMove(Board *board);
 
 #endif /* POLYGLOT_H */

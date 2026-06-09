@@ -181,28 +181,46 @@ build() {
     print_success "Build complete"
 }
 
-# Run tests
 run_tests() {
     print_info "Running tests..."
 
-    if [ -f "build/bin/test_search" ] || [ -f "build/bin/Release/test_search.exe" ] || [ -f "build/bin/test_search.exe" ]; then
-        # Find the test executable
-        if [ -f "build/bin/test_search" ]; then
-            ./build/bin/test_search
-        elif [ -f "build/bin/Release/test_search.exe" ]; then
-            ./build/bin/Release/test_search.exe
-        elif [ -f "build/bin/test_search.exe" ]; then
-            ./build/bin/test_search.exe
-        fi
+    local test_search_bin=""
+    local test_polybook_bin=""
 
-        if [ $? -eq 0 ]; then
-            print_success "All tests passed"
-        else
-            print_error "Tests failed"
+    if [ -f "build/bin/test_search" ]; then
+        test_search_bin="./build/bin/test_search"
+    elif [ -f "build/bin/Release/test_search.exe" ]; then
+        test_search_bin="./build/bin/Release/test_search.exe"
+    elif [ -f "build/bin/test_search.exe" ]; then
+        test_search_bin="./build/bin/test_search.exe"
+    fi
+
+    if [ -f "build/bin/test_polybook" ]; then
+        test_polybook_bin="./build/bin/test_polybook"
+    elif [ -f "build/bin/Release/test_polybook.exe" ]; then
+        test_polybook_bin="./build/bin/Release/test_polybook.exe"
+    elif [ -f "build/bin/test_polybook.exe" ]; then
+        test_polybook_bin="./build/bin/test_polybook.exe"
+    fi
+
+    if [ -n "$test_search_bin" ] && [ -n "$test_polybook_bin" ]; then
+        print_info "Running search tests..."
+        $test_search_bin
+        if [ $? -ne 0 ]; then
+            print_error "Search tests failed"
             exit 1
         fi
+
+        print_info "Running polybook and polyglot tests..."
+        $test_polybook_bin
+        if [ $? -ne 0 ]; then
+            print_error "Polybook/Polyglot tests failed"
+            exit 1
+        fi
+
+        print_success "All tests passed"
     else
-        print_warning "Test executable not found. Building first..."
+        print_warning "Test executables not found. Building first..."
         build
         run_tests
     fi
