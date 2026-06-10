@@ -66,6 +66,12 @@ safe_cleanup() {
             return 0
         fi
 
+        # Try Docker container to clean if available (handles root-owned files from docker builds)
+        if command -v docker &> /dev/null; then
+            print_warning "Using docker to clean $dir..."
+            docker run --rm -v "$(pwd):/project" -w /project ubuntu:22.04 rm -rf "$dir" &>/dev/null && return 0
+        fi
+
         # If that fails, try with sudo (Linux/macOS)
         if command -v sudo &> /dev/null; then
             print_warning "Permission issues detected, using sudo to clean..."
@@ -120,7 +126,7 @@ test_with_docker() {
         mkdir build && cd build
         cmake .. > /dev/null 2>&1
         make > /dev/null 2>&1
-        ./bin/test_search
+        ./bin/test_search && ./bin/test_polybook
     " 2>/dev/null; then
         print_success "Ubuntu 22.04 test passed"
         ((docker_passed++))
@@ -138,7 +144,7 @@ test_with_docker() {
         mkdir build && cd build
         cmake .. > /dev/null 2>&1
         make > /dev/null 2>&1
-        ./bin/test_search
+        ./bin/test_search && ./bin/test_polybook
     " 2>/dev/null; then
         print_success "Ubuntu 20.04 test passed"
         ((docker_passed++))
@@ -156,7 +162,7 @@ test_with_docker() {
         mkdir build && cd build
         cmake -DCMAKE_C_COMPILER=clang .. > /dev/null 2>&1
         make > /dev/null 2>&1
-        ./bin/test_search
+        ./bin/test_search && ./bin/test_polybook
     " 2>/dev/null; then
         print_success "Ubuntu 22.04 with Clang passed"
         ((docker_passed++))
@@ -202,7 +208,7 @@ EOF
         mkdir build_win && cd build_win
         cmake -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake .. > /dev/null 2>&1
         make -j4 > /dev/null 2>&1
-        [ -f bin/chess_engine.exe ] && [ -f bin/test_search.exe ]
+        [ -f bin/chess_engine.exe ] && [ -f bin/test_search.exe ] && [ -f bin/test_polybook.exe ]
     " 2>/dev/null; then
         print_success "Windows executables created successfully"
         print_info "Note: Can't run Windows .exe files on $OS, but compilation works"
@@ -271,7 +277,7 @@ test_native_build() {
             return 1
         }
         cd bin/Release
-        ./test_search.exe || {
+        ./test_search.exe && ./test_polybook.exe || {
             print_failure "Tests failed"
             return 1
         }
@@ -285,7 +291,7 @@ test_native_build() {
             return 1
         }
         cd bin
-        ./test_search || {
+        ./test_search && ./test_polybook || {
             print_failure "Tests failed"
             return 1
         }
@@ -312,17 +318,17 @@ check_portability() {
     # Check for Windows-specific paths
     if grep -r "C:\\" src/ 2>/dev/null | grep -v "Binary" | grep -q .; then
         print_failure "Found Windows-specific paths (C:\\) in source code"
-        ((issues++))
+        issues=$((issues + 1))
     fi
 
     if grep -r "#include <pthread.h>" src/ 2>/dev/null | grep -q .; then
         print_warning "Found POSIX threads (pthread.h) - needs Windows alternative"
-        ((issues++))
+        issues=$((issues + 1))
     fi
 
     if grep -r "#include <unistd.h>" src/ 2>/dev/null | grep -q .; then
         print_warning "Found Unix-specific include (unistd.h)"
-        ((issues++))
+        issues=$((issues + 1))
     fi
 
     if [ $issues -eq 0 ]; then
