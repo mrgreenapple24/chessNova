@@ -25,36 +25,17 @@ elseif(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   endif()
 endif()
 
-# Gather Source Files
-file(GLOB ALL_SRCS "src/*.c")
+# Gather Engine Source Files
+file(GLOB ENGINE_SRCS "src/*.c")
 
-# Sources for the main engine (everything except test files)
-set(ENGINE_SRCS ${ALL_SRCS})
-list(REMOVE_ITEM ENGINE_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/test_search.c")
-list(REMOVE_ITEM ENGINE_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/test_polybook.c")
-
-# Sources for test_search (everything except main.c and test_polybook.c)
-set(TEST_SRCS ${ALL_SRCS})
-list(REMOVE_ITEM TEST_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
-list(REMOVE_ITEM TEST_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/test_polybook.c")
-
-# Sources for test_polybook (everything except main.c and test_search.c)
-set(TEST_POLYBOOK_SRCS ${ALL_SRCS})
-list(REMOVE_ITEM TEST_POLYBOOK_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
-list(REMOVE_ITEM TEST_POLYBOOK_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/test_search.c")
-
-# Define the executables
+# Define the main engine executable
 add_executable(chess_engine ${ENGINE_SRCS})
-add_executable(test_search ${TEST_SRCS})
-add_executable(test_polybook ${TEST_POLYBOOK_SRCS})
 
 # Include directories (Must come AFTER add_executable)
 target_include_directories(chess_engine PRIVATE include)
-target_include_directories(test_search PRIVATE include)
-target_include_directories(test_polybook PRIVATE include)
 
 # Output directory configuration (works on all platforms)
-set_target_properties(chess_engine test_search test_polybook PROPERTIES
+set_target_properties(chess_engine PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
@@ -62,17 +43,10 @@ set_target_properties(chess_engine test_search test_polybook PROPERTIES
 if(WIN32)
   # Link Winsock library for Windows sockets functions (ntohl, ntohs)
   target_link_libraries(chess_engine ws2_32)
-  target_link_libraries(test_search ws2_32)
-  target_link_libraries(test_polybook ws2_32)
 
   # Define Windows version for Winsock
   target_compile_definitions(chess_engine PRIVATE _WIN32_WINNT=0x0601)
-  target_compile_definitions(test_search PRIVATE _WIN32_WINNT=0x0601)
-  target_compile_definitions(test_polybook PRIVATE _WIN32_WINNT=0x0601)
-
   target_compile_definitions(chess_engine PRIVATE _CRT_SECURE_NO_WARNINGS)
-  target_compile_definitions(test_search PRIVATE _CRT_SECURE_NO_WARNINGS)
-  target_compile_definitions(test_polybook PRIVATE _CRT_SECURE_NO_WARNINGS)
 
   message(STATUS "Windows detected - linking ws2_32.lib")
 elseif(APPLE)
@@ -92,6 +66,38 @@ endif()
 message(STATUS "Building on: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "Compiler: ${CMAKE_C_COMPILER_ID}")
 
+# Enable CTest testing
 enable_testing()
-add_test(NAME test_search COMMAND test_search)
-add_test(NAME test_polybook COMMAND test_polybook)
+
+# Discover and configure all test files in the tests/ directory
+file(GLOB TEST_FILES "tests/*.c")
+
+# Test engine sources configuration (exclude main.c so we can link test mains)
+set(TEST_ENGINE_SRCS ${ENGINE_SRCS})
+list(REMOVE_ITEM TEST_ENGINE_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
+
+foreach(test_file ${TEST_FILES})
+    # Extract filename without directory path and extension
+    get_filename_component(test_name ${test_file} NAME_WE)
+    
+    # Define the test executable
+    add_executable(${test_name} ${test_file} ${TEST_ENGINE_SRCS})
+    
+    # Include directories (Must come AFTER add_executable)
+    target_include_directories(${test_name} PRIVATE include)
+    
+    # Output directory configuration (works on all platforms)
+    set_target_properties(${test_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+    )
+    
+    # Platform-specific library linking and definitions for tests
+    if(WIN32)
+      target_link_libraries(${test_name} ws2_32)
+      target_compile_definitions(${test_name} PRIVATE _WIN32_WINNT=0x0601)
+      target_compile_definitions(${test_name} PRIVATE _CRT_SECURE_NO_WARNINGS)
+    endif()
+    
+    # Add target to test suite
+    add_test(NAME ${test_name} COMMAND ${test_name})
+endforeach()

@@ -184,41 +184,48 @@ build() {
 run_tests() {
     print_info "Running tests..."
 
-    local test_search_bin=""
-    local test_polybook_bin=""
+    # Find the directory containing the test executables
+    local test_dir=""
+    for dir in "build/bin" "build/bin/Release" "build/bin/Debug" "build/bin/RelWithDebInfo" "build/bin/MinSizeRel"; do
+        if [ -d "$dir" ] && ( ls "$dir"/test_* >/dev/null 2>&1 || ls "$dir"/test_*.exe >/dev/null 2>&1 ); then
+            test_dir="$dir"
+            break
+        fi
+    done
 
-    if [ -f "build/bin/test_search" ]; then
-        test_search_bin="./build/bin/test_search"
-    elif [ -f "build/bin/Release/test_search.exe" ]; then
-        test_search_bin="./build/bin/Release/test_search.exe"
-    elif [ -f "build/bin/test_search.exe" ]; then
-        test_search_bin="./build/bin/test_search.exe"
-    fi
-
-    if [ -f "build/bin/test_polybook" ]; then
-        test_polybook_bin="./build/bin/test_polybook"
-    elif [ -f "build/bin/Release/test_polybook.exe" ]; then
-        test_polybook_bin="./build/bin/Release/test_polybook.exe"
-    elif [ -f "build/bin/test_polybook.exe" ]; then
-        test_polybook_bin="./build/bin/test_polybook.exe"
-    fi
-
-    if [ -n "$test_search_bin" ] && [ -n "$test_polybook_bin" ]; then
-        print_info "Running search tests..."
-        $test_search_bin
-        if [ $? -ne 0 ]; then
-            print_error "Search tests failed"
+    if [ -n "$test_dir" ]; then
+        local failed=0
+        local total=0
+        
+        # Run each test executable found in the directory
+        for test_exe in "$test_dir"/test_*; do
+            if [ -f "$test_exe" ]; then
+                # Skip common Windows/MSVC compiler output files
+                case "$test_exe" in
+                    *.pdb|*.ilk|*.lib|*.exp|*.obj|*.o)
+                        continue
+                        ;;
+                esac
+                
+                print_info "Running $(basename "$test_exe")..."
+                if "$test_exe"; then
+                    print_success "$(basename "$test_exe") passed"
+                else
+                    print_error "$(basename "$test_exe") failed"
+                    failed=$((failed + 1))
+                fi
+                total=$((total + 1))
+            fi
+        done
+        
+        if [ $failed -eq 0 ] && [ $total -gt 0 ]; then
+            print_success "All $total tests passed successfully"
+        elif [ $total -eq 0 ]; then
+            print_warning "No test executables found in $test_dir"
+        else
+            print_error "$failed out of $total tests failed"
             exit 1
         fi
-
-        print_info "Running polybook and polyglot tests..."
-        $test_polybook_bin
-        if [ $? -ne 0 ]; then
-            print_error "Polybook/Polyglot tests failed"
-            exit 1
-        fi
-
-        print_success "All tests passed"
     else
         print_warning "Test executables not found. Building first..."
         build
