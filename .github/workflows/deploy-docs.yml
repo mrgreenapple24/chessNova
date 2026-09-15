@@ -40,7 +40,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # Match this path to your Doxyfile output (common values: './html' or './docs/html')
-          path: './html'
+          path: './docs/html'
 
       # Step B: Deploy the uploaded artifact to Pages
       - name: Deploy to GitHub Pages
