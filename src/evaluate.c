@@ -361,6 +361,63 @@ int evaluate(const Board* board) {
     mg_score -= count_bits(black_attackers) * MG_KING_ATTACK_PENALTY;
     eg_score -= count_bits(black_attackers) * EG_KING_ATTACK_PENALTY;
 
+    // --- Pawn Storm Calculation ---
+    U64 black_pawn_attacks = bPawnAnyAttacks(board->bitboards[bp]);
+    U64 white_pawn_attacks = wPawnAnyAttacks(board->bitboards[wp]);
+
+    // 1. Black pawn storm on White King (attacks on squares in front of White King)
+    int black_pawn_storm_on_white_king_count = 0;
+    if (white_king_sq != NO_SQ) {
+        int r = white_king_sq / 8;
+        int f = white_king_sq % 8;
+        if (r < 7) { // Rank must be 0 to 6
+            int front_rank = r + 1;
+            U64 white_king_front_mask = 0ULL;
+            if (f == 0) { // a-file: 2 front squares (a & b files)
+                white_king_front_mask |= (1ULL << (front_rank * 8 + 0));
+                white_king_front_mask |= (1ULL << (front_rank * 8 + 1));
+            } else if (f == 7) { // h-file: 2 front squares (g & h files)
+                white_king_front_mask |= (1ULL << (front_rank * 8 + 6));
+                white_king_front_mask |= (1ULL << (front_rank * 8 + 7));
+            } else { // b-g files: 3 front squares (file-1, file, file+1)
+                white_king_front_mask |= (1ULL << (front_rank * 8 + f - 1));
+                white_king_front_mask |= (1ULL << (front_rank * 8 + f));
+                white_king_front_mask |= (1ULL << (front_rank * 8 + f + 1));
+            }
+            black_pawn_storm_on_white_king_count = count_bits(white_king_front_mask & black_pawn_attacks);
+        }
+    }
+
+    // 2. White pawn storm on Black King (attacks on squares in front of Black King)
+    int white_pawn_storm_on_black_king_count = 0;
+    if (black_king_sq != NO_SQ) {
+        int r = black_king_sq / 8;
+        int f = black_king_sq % 8;
+        if (r > 0) { // Rank must be 1 to 7
+            int front_rank = r - 1;
+            U64 black_king_front_mask = 0ULL;
+            if (f == 0) { // a-file: 2 front squares (a & b files)
+                black_king_front_mask |= (1ULL << (front_rank * 8 + 0));
+                black_king_front_mask |= (1ULL << (front_rank * 8 + 1));
+            } else if (f == 7) { // h-file: 2 front squares (g & h files)
+                black_king_front_mask |= (1ULL << (front_rank * 8 + 6));
+                black_king_front_mask |= (1ULL << (front_rank * 8 + 7));
+            } else { // b-g files: 3 front squares (file-1, file, file+1)
+                black_king_front_mask |= (1ULL << (front_rank * 8 + f - 1));
+                black_king_front_mask |= (1ULL << (front_rank * 8 + f));
+                black_king_front_mask |= (1ULL << (front_rank * 8 + f + 1));
+            }
+            white_pawn_storm_on_black_king_count = count_bits(black_king_front_mask & white_pawn_attacks);
+        }
+    }
+
+    // Apply storm attack penalties
+    mg_score += black_pawn_storm_on_white_king_count * MG_PAWN_STORM_ATTACK_PENALTY;
+    eg_score += black_pawn_storm_on_white_king_count * EG_PAWN_STORM_ATTACK_PENALTY;
+
+    mg_score -= white_pawn_storm_on_black_king_count * MG_PAWN_STORM_ATTACK_PENALTY;
+    eg_score -= white_pawn_storm_on_black_king_count * EG_PAWN_STORM_ATTACK_PENALTY;
+
     // Tapered evaluation interpolation
     int mg_phase = game_phase;
     if (mg_phase > total_phase)

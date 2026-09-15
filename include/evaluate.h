@@ -37,6 +37,8 @@
 /* King Safety */
 #define MG_KING_ATTACK_PENALTY -5
 #define EG_KING_ATTACK_PENALTY -2
+#define MG_PAWN_STORM_ATTACK_PENALTY -10
+#define EG_PAWN_STORM_ATTACK_PENALTY -20
 
 #define FLIP(sq) ((sq) ^ 56)
 

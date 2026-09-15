@@ -107,24 +107,24 @@ theoretical minimum of `O(b^(d/2))` nodes.
 - [ ] Optionally extend on passed pawn pushes to 7th rank and singular moves
 
 ---
-
+16
 ## 3. Evaluation Improvements
 
 ### 3.1 Pawn Structure
 Pawn structure evaluation is permanent (pawns don't move backward) and benefits from caching.
 
 - [ ] **Pawn hash table**: separate small hash table (1–4MB) keyed on pawn Zobrist hash
-- [ ] **Doubled pawns**: penalty for 2+ pawns on the same file
-- [ ] **Isolated pawns**: penalty for pawns with no friendly pawns on adjacent files
-- [ ] **Backward pawns**: penalty for pawns that can't be safely advanced and have no support
-- [ ] **Passed pawns**: significant bonus; scale bonus by rank (7th rank = very large bonus)
-- [ ] **Pawn chains**: small bonus for pawns defending each other diagonally
-- [ ] **Pawn islands**: penalty proportional to number of disconnected pawn groups
-- [ ] **Candidate passed pawns**: bonus for pawns that could become passers with help
+- [x] **Doubled pawns**: penalty for 2+ pawns on the same file
+- [x] **Isolated pawns**: penalty for pawns with no friendly pawns on adjacent files
+- [x] **Backward pawns**: penalty for pawns that can't be safely advanced and have no support
+- [x] **Passed pawns**: significant bonus; scale bonus by rank (7th rank = very large bonus)
+- [x] **Pawn chains**: small bonus for pawns defending each other diagonally
+- [x] **Pawn islands**: penalty proportional to number of disconnected pawn groups
+- [x] **Candidate passed pawns**: bonus for pawns that could become passers with help
 
 ### 3.2 King Safety
-- [ ] **Pawn shield**: bonus for pawns on f2/g2/h2 (or mirrored) in front of a castled king
-- [ ] **Pawn storm**: penalty if opponent has pawns advancing toward your king's shelter
+- [x] **Pawn shield**: bonus for pawns on f2/g2/h2 (or mirrored) in front of a castled king
+- [x] **Pawn storm**: penalty if opponent has pawns advancing toward your king's shelter
 - [ ] **King attack zone**: count opponent pieces attacking squares near the king; scale penalty
   exponentially (one attacker = small penalty, four attackers = large penalty)
 - [ ] **Open files near king**: penalty for open/semi-open files next to the king
@@ -134,7 +134,7 @@ Pawn structure evaluation is permanent (pawns don't move backward) and benefits 
 ### 3.3 Piece Mobility & Activity
 - [ ] Count legal (or pseudo-legal) moves for each piece; reward mobility
 - [ ] **Rook on open file**: bonus; **rook on semi-open file**: smaller bonus
-- [ ] **Rook on 7th rank**: large bonus when opponent king is on 8th rank
+- [x] **Rook on 7th rank**: large bonus when opponent king is on 8th rank
 - [ ] **Connected rooks**: bonus for rooks on the same rank/file with no pieces between
 - [ ] **Knight outpost**: bonus for knights on central squares protected by a pawn with no
   opponent pawn that can challenge them
@@ -142,9 +142,9 @@ Pawn structure evaluation is permanent (pawns don't move backward) and benefits 
 - [ ] **Bishop pair**: bonus (~50cp) for having both bishops when opponent does not
 
 ### 3.4 Piece-Square Tables (PST)
-- [ ] Ensure separate PSTs for **middlegame** and **endgame** for every piece type
-- [ ] Interpolate using a **game phase** value derived from remaining material (tapered eval)
-- [ ] Formula: `score = (mg_score * phase + eg_score * (24 - phase)) / 24`
+- [x] Ensure separate PSTs for **middlegame** and **endgame** for every piece type
+- [x] Interpolate using a **game phase** value derived from remaining material (tapered eval)
+- [x] Formula: `score = (mg_score * phase + eg_score * (24 - phase)) / 24`
   where phase counts queens (×4), rooks (×2), bishops (×1), knights (×1); max = 24
 
 ### 3.5 Texel Tuning
@@ -161,9 +161,9 @@ Pawn structure evaluation is permanent (pawns don't move backward) and benefits 
 ## 4. Opening Book
 
 ### 4.1 Polyglot Format
-- [ ] Study the Polyglot `.bin` format: 16-byte entries (key, move, weight, learn)
-- [ ] Implement a reader that maps Polyglot move encoding to internal move representation
-- [ ] Handle edge cases: castling encoding differs from internal format
+- [x] Study the Polyglot `.bin` format: 16-byte entries (key, move, weight, learn)
+- [x] Implement a reader that maps Polyglot move encoding to internal move representation
+- [x] Handle edge cases: castling encoding differs from internal format
 
 ### 4.2 Book Probing Logic
 - [ ] At root, probe book using current Zobrist key
@@ -172,7 +172,7 @@ Pawn structure evaluation is permanent (pawns don't move backward) and benefits 
 - [ ] Allow users to specify a custom book path via UCI option
 
 ### 4.3 Book Sources
-- [ ] Bundle a small default book (e.g., `gm2001.bin` or similar freely available book)
+- [x] Bundle a small default book (e.g., `gm2001.bin` or similar freely available book)
 - [ ] Document how to replace with a larger book (e.g., `Cerebellum`, `komodo.bin`)
 
 ---
@@ -244,8 +244,8 @@ for all positions with up to 7 pieces.
 ## 8. Testing & Validation
 
 ### 8.1 Correctness
-- [ ] Maintain perft suite; add positions with en passant, castling, promotions edge cases
-- [ ] Add a regression suite: positions where the engine must find a specific move
+- [x] Maintain perft suite; add positions with en passant, castling, promotions edge cases
+- [x] Add a regression suite: positions where the engine must find a specific move
 
 ### 8.2 Strength Testing
 - [ ] Set up `cutechess-cli` or `fastchess` for automated match play
