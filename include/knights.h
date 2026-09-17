@@ -1,8 +1,8 @@
 #ifndef KNIGHTS_H
 #define KNIGHTS_H
 
-#include "types.h"
 #include "bitboard.h"
+#include "types.h"
 
 extern U64 arrKnightAttacks[64];
 extern U64 sqknightAttacks(int sq);

@@ -9,7 +9,7 @@ char piece_char[] = "PNBRQKpnbrqk";
  * @brief Prints the current board state to the console.
  * @param board Pointer to the Board structure.
  */
-void print_board(Board *board) {
+void print_board(Board* board) {
     printf("\n");
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file <= 7; file++) {
@@ -23,8 +23,10 @@ void print_board(Board *board) {
                 }
             }
 
-            if (piece == -1) printf(" . ");
-            else printf(" %c ", piece_char[piece]);
+            if (piece == -1)
+                printf(" . ");
+            else
+                printf(" %c ", piece_char[piece]);
         }
         printf("  %d\n", rank + 1);
     }
@@ -56,7 +58,7 @@ void print_bitboard(U64 bitboard) {
  * @brief Resets the board to its initial state.
  * @param board Pointer to the Board structure.
  */
-void reset_board(Board *board) {
+void reset_board(Board* board) {
     for (int i = 0; i <= bk; i++) {
         board->bitboards[i] = 0;
     }
@@ -80,7 +82,7 @@ void reset_board(Board *board) {
  * @param fen The FEN string to parse.
  * @param board Pointer to the Board structure.
  */
-void parse_fen(const char *fen, Board *board) {
+void parse_fen(const char* fen, Board* board) {
     reset_board(board);
 
     int rank = RANK_8;
@@ -91,34 +93,64 @@ void parse_fen(const char *fen, Board *board) {
         int piece = -1;
 
         switch (*fen) {
-            case 'P': piece = wp; break;
-            case 'N': piece = wn; break;
-            case 'B': piece = wb; break;
-            case 'R': piece = wr; break;
-            case 'Q': piece = wq; break;
-            case 'K': piece = wk; break;
-            case 'p': piece = bp; break;
-            case 'n': piece = bn; break;
-            case 'b': piece = bb; break;
-            case 'r': piece = br; break;
-            case 'q': piece = bq; break;
-            case 'k': piece = bk; break;
+        case 'P':
+            piece = wp;
+            break;
+        case 'N':
+            piece = wn;
+            break;
+        case 'B':
+            piece = wb;
+            break;
+        case 'R':
+            piece = wr;
+            break;
+        case 'Q':
+            piece = wq;
+            break;
+        case 'K':
+            piece = wk;
+            break;
+        case 'p':
+            piece = bp;
+            break;
+        case 'n':
+            piece = bn;
+            break;
+        case 'b':
+            piece = bb;
+            break;
+        case 'r':
+            piece = br;
+            break;
+        case 'q':
+            piece = bq;
+            break;
+        case 'k':
+            piece = bk;
+            break;
 
-            case '1': case '2': case '3': case '4':
-            case '5': case '6': case '7': case '8':
-                piece = EMPTY;
-                count = *fen - '0';
-                break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+            piece = EMPTY;
+            count = *fen - '0';
+            break;
 
-            case '/':
-                rank--;
-                file = FILE_A;
-                fen++;
-                continue;
+        case '/':
+            rank--;
+            file = FILE_A;
+            fen++;
+            continue;
 
-            default:
-                fen++;
-                continue;
+        default:
+            fen++;
+            continue;
         }
 
         for (int i = 0; i < count; i++) {
@@ -135,19 +167,29 @@ void parse_fen(const char *fen, Board *board) {
     }
 
     // Side to move
-    while (*fen == ' ') fen++;
+    while (*fen == ' ')
+        fen++;
     board->side = (*fen == 'w') ? white : black;
     fen++;
 
     // Castling rights
-    while (*fen == ' ') fen++;
+    while (*fen == ' ')
+        fen++;
     if (*fen != '-') {
         while (*fen != ' ' && *fen != '\0') {
             switch (*fen) {
-                case 'K': board->castle |= WKCA; break;
-                case 'Q': board->castle |= WQCA; break;
-                case 'k': board->castle |= BKCA; break;
-                case 'q': board->castle |= BQCA; break;
+            case 'K':
+                board->castle |= WKCA;
+                break;
+            case 'Q':
+                board->castle |= WQCA;
+                break;
+            case 'k':
+                board->castle |= BKCA;
+                break;
+            case 'q':
+                board->castle |= BQCA;
+                break;
             }
             fen++;
         }
@@ -156,7 +198,8 @@ void parse_fen(const char *fen, Board *board) {
     }
 
     // En passant square
-    while (*fen == ' ') fen++;
+    while (*fen == ' ')
+        fen++;
     if (*fen != '-') {
         int f = fen[0] - 'a';
         int r = fen[1] - '1';
@@ -169,8 +212,10 @@ void parse_fen(const char *fen, Board *board) {
     // Update occupancies
     board->occupancies[white] = 0ULL;
     board->occupancies[black] = 0ULL;
-    for (int p = wp; p <= wk; p++) board->occupancies[white] |= board->bitboards[p];
-    for (int p = bp; p <= bk; p++) board->occupancies[black] |= board->bitboards[p];
+    for (int p = wp; p <= wk; p++)
+        board->occupancies[white] |= board->bitboards[p];
+    for (int p = bp; p <= bk; p++)
+        board->occupancies[black] |= board->bitboards[p];
     board->occupancies[both] = board->occupancies[white] | board->occupancies[black];
 }
 
@@ -180,7 +225,7 @@ void parse_fen(const char *fen, Board *board) {
  * @param sq The square to check.
  * @return The piece type (e.g., wp, bn, or EMPTY).
  */
-int get_piece_at(const Board *board, int sq) {
+int get_piece_at(const Board* board, int sq) {
     return board->pieces[sq];
 }
 
@@ -191,7 +236,7 @@ int get_piece_at(const Board *board, int sq) {
  * @param to Destination square.
  * @param piece The piece being moved.
  */
-static void move_piece(Board *board, int from, int to, int piece) {
+static void move_piece(Board* board, int from, int to, int piece) {
     clear_bit(&board->bitboards[piece], from);
     set_bit(&board->bitboards[piece], to);
     int side = (piece <= wk) ? white : black;
@@ -209,7 +254,7 @@ static void move_piece(Board *board, int from, int to, int piece) {
  * @param sq The square to clear.
  * @param piece The piece to remove.
  */
-static void remove_piece(Board *board, int sq, int piece) {
+static void remove_piece(Board* board, int sq, int piece) {
     clear_bit(&board->bitboards[piece], sq);
     int side = (piece <= wk) ? white : black;
     clear_bit(&board->occupancies[side], sq);
@@ -223,7 +268,7 @@ static void remove_piece(Board *board, int sq, int piece) {
  * @param sq The destination square.
  * @param piece The piece to add.
  */
-static void add_piece(Board *board, int sq, int piece) {
+static void add_piece(Board* board, int sq, int piece) {
     set_bit(&board->bitboards[piece], sq);
     int side = (piece <= wk) ? white : black;
     set_bit(&board->occupancies[side], sq);
@@ -237,7 +282,7 @@ static void add_piece(Board *board, int sq, int piece) {
  * @param move The packed 32-bit move.
  * @return true if the move is legal, false if it leaves the king in check.
  */
-bool make_move(Board *board, uint32_t move) {
+bool make_move(Board* board, uint32_t move) {
     int from = GET_FROM(move);
     int to = GET_TO(move);
     int side = board->side;
@@ -262,16 +307,25 @@ bool make_move(Board *board, uint32_t move) {
         board->fiftyMove++;
     }
 
-    if (piece == wp || piece == bp) board->fiftyMove = 0;
+    if (piece == wp || piece == bp)
+        board->fiftyMove = 0;
 
     board->enpassant = NO_SQ;
 
     if (move & MFLAG_CA) {
         switch (to) {
-            case g1: move_piece(board, h1, f1, wr); break;
-            case c1: move_piece(board, a1, d1, wr); break;
-            case g8: move_piece(board, h8, f8, br); break;
-            case c8: move_piece(board, a8, d8, br); break;
+        case g1:
+            move_piece(board, h1, f1, wr);
+            break;
+        case c1:
+            move_piece(board, a1, d1, wr);
+            break;
+        case g8:
+            move_piece(board, h8, f8, br);
+            break;
+        case c8:
+            move_piece(board, a8, d8, br);
+            break;
         }
     }
 
@@ -286,13 +340,19 @@ bool make_move(Board *board, uint32_t move) {
         board->enpassant = (side == white) ? from + 8 : from - 8;
     }
 
-    if (piece == wk) board->castle &= ~(WKCA | WQCA);
-    else if (piece == bk) board->castle &= ~(BKCA | BQCA);
+    if (piece == wk)
+        board->castle &= ~(WKCA | WQCA);
+    else if (piece == bk)
+        board->castle &= ~(BKCA | BQCA);
 
-    if (from == a1 || to == a1) board->castle &= ~WQCA;
-    if (from == h1 || to == h1) board->castle &= ~WKCA;
-    if (from == a8 || to == a8) board->castle &= ~BQCA;
-    if (from == h8 || to == h8) board->castle &= ~BKCA;
+    if (from == a1 || to == a1)
+        board->castle &= ~WQCA;
+    if (from == h1 || to == h1)
+        board->castle &= ~WKCA;
+    if (from == a8 || to == a8)
+        board->castle &= ~BQCA;
+    if (from == h8 || to == h8)
+        board->castle &= ~BKCA;
 
     board->side ^= 1;
     board->ply++;
@@ -310,7 +370,7 @@ bool make_move(Board *board, uint32_t move) {
  * @brief Reverts the board to the previous state using the history stack.
  * @param board Pointer to the Board structure.
  */
-void unmake_move(Board *board) {
+void unmake_move(Board* board) {
     board->hisply--;
     board->ply--;
     uint32_t move = board->history[board->hisply].move;
@@ -346,10 +406,18 @@ void unmake_move(Board *board) {
 
     if (move & MFLAG_CA) {
         switch (to) {
-            case g1: move_piece(board, f1, h1, wr); break;
-            case c1: move_piece(board, d1, a1, wr); break;
-            case g8: move_piece(board, f8, h8, br); break;
-            case c8: move_piece(board, d8, a8, br); break;
+        case g1:
+            move_piece(board, f1, h1, wr);
+            break;
+        case c1:
+            move_piece(board, d1, a1, wr);
+            break;
+        case g8:
+            move_piece(board, f8, h8, br);
+            break;
+        case c8:
+            move_piece(board, d8, a8, br);
+            break;
         }
     }
 }
@@ -358,7 +426,7 @@ void unmake_move(Board *board) {
  * @brief Toggles the side to move without making a move on the board.
  * @param board Pointer to the Board structure.
  */
-void make_null_move(Board *board) {
+void make_null_move(Board* board) {
     board->history[board->hisply].move = 0;
     board->history[board->hisply].castle = board->castle;
     board->history[board->hisply].enpassant = board->enpassant;
@@ -375,7 +443,7 @@ void make_null_move(Board *board) {
  * @brief Reverts a null move.
  * @param board Pointer to the Board structure.
  */
-void unmake_null_move(Board *board) {
+void unmake_null_move(Board* board) {
     board->hisply--;
     board->ply--;
 

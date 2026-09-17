@@ -30,6 +30,6 @@ typedef struct {
  * @param info Pointer to the SearchInfo structure.
  * @return The packed 32-bit best move found.
  */
-extern uint32_t search_best_move(Board *board, SearchInfo *info);
+extern uint32_t search_best_move(Board* board, SearchInfo* info);
 
 #endif

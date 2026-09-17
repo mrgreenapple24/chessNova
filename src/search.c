@@ -5,7 +5,7 @@
 /**
  * Checks if the search should be stopped due to time or other conditions.
  */
-static void check_up(SearchInfo *info) {
+static void check_up(SearchInfo* info) {
     if (info->timeset && get_time_ms() > (long long)info->stoptime) {
         info->stopped = 1;
     }
@@ -14,20 +14,20 @@ static void check_up(SearchInfo *info) {
 /**
  * Helper to check if the current side has non-pawn material.
  */
-static int has_non_pawn_material(const Board *board) {
+static int has_non_pawn_material(const Board* board) {
     if (board->side == white) {
-        return board->bitboards[wn] || board->bitboards[wb] ||
-               board->bitboards[wr] || board->bitboards[wq];
+        return board->bitboards[wn] || board->bitboards[wb] || board->bitboards[wr] ||
+               board->bitboards[wq];
     } else {
-        return board->bitboards[bn] || board->bitboards[bb] ||
-               board->bitboards[br] || board->bitboards[bq];
+        return board->bitboards[bn] || board->bitboards[bb] || board->bitboards[br] ||
+               board->bitboards[bq];
     }
 }
 
 /**
  * Scores moves in the move list based on MVV-LVA and other heuristics.
  */
-static void score_moves(SearchInfo *info, MoveList *list, Board *board) {
+static void score_moves(SearchInfo* info, MoveList* list, Board* board) {
     for (int i = 0; i < list->count; i++) {
         uint32_t move = list->moves[i].move;
         int piece = board->pieces[GET_FROM(move)];
@@ -54,7 +54,7 @@ static void score_moves(SearchInfo *info, MoveList *list, Board *board) {
 /**
  * Picks the next best move from the list and swaps it to the front.
  */
-static void pick_next_move(int move_num, MoveList *list) {
+static void pick_next_move(int move_num, MoveList* list) {
     int best_score = -1;
     int best_idx = move_num;
 
@@ -71,17 +71,20 @@ static void pick_next_move(int move_num, MoveList *list) {
 }
 
 /**
- * Quiescence search to handle the horizon effect by searching captures until the position is quiet.
+ * Quiescence search to handle the horizon effect by searching captures until
+ * the position is quiet.
  */
-static int quiescence(Board *board, SearchInfo *info, int alpha, int beta) {
+static int quiescence(Board* board, SearchInfo* info, int alpha, int beta) {
     if ((info->nodes & 2047) == 0) {
         check_up(info);
     }
     info->nodes++;
 
     int stand_pat = evaluate(board);
-    if (stand_pat >= beta) return beta;
-    if (alpha < stand_pat) alpha = stand_pat;
+    if (stand_pat >= beta)
+        return beta;
+    if (alpha < stand_pat)
+        alpha = stand_pat;
 
     MoveList list;
     generate_all_moves(board, &list);
@@ -90,16 +93,21 @@ static int quiescence(Board *board, SearchInfo *info, int alpha, int beta) {
     for (int i = 0; i < list.count; i++) {
         pick_next_move(i, &list);
         uint32_t move = list.moves[i].move;
-        if (!(move & MFLAG_CAP)) continue;
+        if (!(move & MFLAG_CAP))
+            continue;
 
-        if (!make_move(board, move)) continue;
+        if (!make_move(board, move))
+            continue;
         int score = -quiescence(board, info, -beta, -alpha);
         unmake_move(board);
 
-        if (info->stopped) return 0;
+        if (info->stopped)
+            return 0;
 
-        if (score >= beta) return beta;
-        if (score > alpha) alpha = score;
+        if (score >= beta)
+            return beta;
+        if (score > alpha)
+            alpha = score;
     }
     return alpha;
 }
@@ -107,8 +115,9 @@ static int quiescence(Board *board, SearchInfo *info, int alpha, int beta) {
 /**
  * Alpha-Beta pruning search with NMP and LMR.
  */
-static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int beta) {
-    if (depth == 0) return quiescence(board, info, alpha, beta);
+static int alpha_beta(Board* board, SearchInfo* info, int depth, int alpha, int beta) {
+    if (depth == 0)
+        return quiescence(board, info, alpha, beta);
 
     if ((info->nodes & 2047) == 0) {
         check_up(info);
@@ -116,7 +125,8 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
     info->nodes++;
 
     U64 king_bb = board->bitboards[(board->side == white) ? wk : bk];
-    if (king_bb == 0) return -MATE_SCORE + board->ply;
+    if (king_bb == 0)
+        return -MATE_SCORE + board->ply;
     int king_sq = get_lsb(king_bb);
     bool in_check = is_square_attacked(board, king_sq, board->side ^ 1);
 
@@ -125,8 +135,10 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
         make_null_move(board);
         int score = -alpha_beta(board, info, depth - 1 - 2, -beta, -beta + 1);
         unmake_null_move(board);
-        if (info->stopped) return 0;
-        if (score >= beta) return beta;
+        if (info->stopped)
+            return 0;
+        if (score >= beta)
+            return beta;
     }
 
     MoveList list;
@@ -139,13 +151,14 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
         pick_next_move(i, &list);
         uint32_t move = list.moves[i].move;
 
-        if (!make_move(board, move)) continue;
+        if (!make_move(board, move))
+            continue;
         legal_moves++;
 
         int score;
         // --- Late Move Reductions ---
-        if (legal_moves > 4 && depth >= 3 && !in_check &&
-            !(move & MFLAG_CAP) && GET_PROMOTED(move) == EMPTY) {
+        if (legal_moves > 4 && depth >= 3 && !in_check && !(move & MFLAG_CAP) &&
+            GET_PROMOTED(move) == EMPTY) {
 
             // Check if the move gives check
             U64 enemy_king_bb = board->bitboards[(board->side == white) ? wk : bk];
@@ -170,7 +183,8 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
 
         unmake_move(board);
 
-        if (info->stopped) return 0;
+        if (info->stopped)
+            return 0;
 
         if (score >= beta) {
             if (!(move & MFLAG_CAP)) {
@@ -198,7 +212,7 @@ static int alpha_beta(Board *board, SearchInfo *info, int depth, int alpha, int 
     return alpha;
 }
 
-uint32_t search_best_move(Board *board, SearchInfo *info) {
+uint32_t search_best_move(Board* board, SearchInfo* info) {
     uint32_t best_move = 0;
     int best_score = -INFINITY;
     int current_depth = 1;
@@ -220,11 +234,13 @@ uint32_t search_best_move(Board *board, SearchInfo *info) {
             pick_next_move(i, &list);
             uint32_t move = list.moves[i].move;
 
-            if (!make_move(board, move)) continue;
+            if (!make_move(board, move))
+                continue;
             int score = -alpha_beta(board, info, current_depth - 1, -INFINITY, INFINITY);
             unmake_move(board);
 
-            if (info->stopped) break;
+            if (info->stopped)
+                break;
 
             if (score > depth_best_score) {
                 depth_best_score = score;
@@ -232,15 +248,18 @@ uint32_t search_best_move(Board *board, SearchInfo *info) {
             }
         }
 
-        if (info->stopped) break;
+        if (info->stopped)
+            break;
 
         best_move = depth_best_move;
         best_score = depth_best_score;
 
-        printf("info score cp %d depth %d nodes %llu time %llu\n",
-               best_score, current_depth, (unsigned long long)info->nodes, (unsigned long long)get_time_ms() - (unsigned long long)info->starttime);
+        printf("info score cp %d depth %d nodes %llu time %llu\n", best_score, current_depth,
+               (unsigned long long)info->nodes,
+               (unsigned long long)get_time_ms() - (unsigned long long)info->starttime);
 
-        if (best_score > MATE_SCORE - 100 || best_score < -MATE_SCORE + 100) break;
+        if (best_score > MATE_SCORE - 100 || best_score < -MATE_SCORE + 100)
+            break;
     }
 
     return best_move;

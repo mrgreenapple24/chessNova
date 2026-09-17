@@ -1,15 +1,16 @@
 /**
  * @file test_polybook.c
- * @brief Test suite for Polyglot Zobrist hashing and opening book moves query functionality.
+ * @brief Test suite for Polyglot Zobrist hashing and opening book moves query
+ * functionality.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <string.h>
 #include "defs.h"
 #include "polyglot.h"
 #include "polykeys.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef _WIN32
 #include <io.h>
@@ -24,17 +25,18 @@
 /**
  * @brief PolyKeyFromBoard is an internal function defined in polybook.c.
  * Declared here for verification against polyglot_hash.
- * 
+ *
  * @param board Pointer to the Board structure.
  * @return U64 The computed Zobrist hash key.
  */
-U64 PolyKeyFromBoard(const Board *board);
+U64 PolyKeyFromBoard(const Board* board);
 
 /** @brief File descriptor backup for stdout redirection. */
 int saved_stdout_fd = -1;
 
 /**
- * @brief Mutes standard output (stdout) by redirecting it to the platform null device.
+ * @brief Mutes standard output (stdout) by redirecting it to the platform null
+ * device.
  */
 void mute_stdout(void) {
     fflush(stdout);
@@ -49,29 +51,30 @@ void unmute_stdout(void) {
     if (saved_stdout_fd != -1) {
         fflush(stdout);
         dup2(saved_stdout_fd, 1);
-        #ifdef _WIN32
+#ifdef _WIN32
         _close(saved_stdout_fd);
-        #else
+#else
         close(saved_stdout_fd);
-        #endif
+#endif
         saved_stdout_fd = -1;
     }
 }
 
 /**
- * @brief Compares computed Polyglot and Polybook hash values for a given FEN string against the expected standard hash.
- * 
+ * @brief Compares computed Polyglot and Polybook hash values for a given FEN
+ * string against the expected standard hash.
+ *
  * @param fen The FEN string to parse.
  * @param expected_hash The expected standard Polyglot Zobrist hash.
  * @param description A brief explanation of the test case.
  */
-void test_hash(const char *fen, uint64_t expected_hash, const char *description) {
+void test_hash(const char* fen, uint64_t expected_hash, const char* description) {
     Board board;
     parse_fen(fen, &board);
-    
+
     uint64_t hash = polyglot_hash(&board);
     uint64_t key_from_polybook = PolyKeyFromBoard(&board);
-    
+
     if (hash != expected_hash || key_from_polybook != hash) {
         unmute_stdout();
         fprintf(stderr, "FAIL: %s\n", description);
@@ -85,45 +88,34 @@ void test_hash(const char *fen, uint64_t expected_hash, const char *description)
 
 /**
  * @brief Main execution entry for the Polyglot/Polybook test suite.
- * 
+ *
  * Runs four reference hash checks and tests the loading and query of book.bin.
- * Prints a single success message to stdout on pass, or failure details to stderr on fail.
- * 
+ * Prints a single success message to stdout on pass, or failure details to
+ * stderr on fail.
+ *
  * @return int Exit status (0 for success, 1 for failure).
  */
 int main() {
     init_magics();
     init_evaluation_masks();
-    
+
     mute_stdout();
-    
+
     // 1. Test hash correctness against standard Polyglot reference values
-    test_hash(
-        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        0x463B96181691FC9CULL,
-        "Starting Position"
-    );
-    
-    test_hash(
-        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
-        0x823C9B50FD114196ULL,
-        "After 1. e4"
-    );
-    
-    test_hash(
-        "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
-        0x0844931A6EF4B9A0ULL,
-        "After 1. e4 e5"
-    );
-    
-    test_hash(
-        "rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
-        0xD3207FEC0612D89DULL,
-        "After 1. e4 e5 2. Nf3"
-    );
-    
+    test_hash("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 0x463B96181691FC9CULL,
+              "Starting Position");
+
+    test_hash("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1", 0x823C9B50FD114196ULL,
+              "After 1. e4");
+
+    test_hash("rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2", 0x0844931A6EF4B9A0ULL,
+              "After 1. e4 e5");
+
+    test_hash("rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+              0xD3207FEC0612D89DULL, "After 1. e4 e5 2. Nf3");
+
     // 2. Test Polybook functionality
-    FILE *f_test = fopen("book.bin", "rb");
+    FILE* f_test = fopen("book.bin", "rb");
     if (f_test) {
         strncpy(book_file_path, "book.bin", sizeof(book_file_path) - 1);
         fclose(f_test);
@@ -143,16 +135,16 @@ int main() {
         }
     }
     InitPolyBook();
-    
+
     if (!use_book) {
         unmute_stdout();
         fprintf(stderr, "FAIL: Failed to load book.bin\n");
         exit(1);
     }
-    
+
     Board board;
     parse_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", &board);
-    
+
     uint32_t book_move = GetBookMove(&board);
     if (book_move == 0) {
         unmute_stdout();
@@ -160,9 +152,9 @@ int main() {
         CleanPolyBook();
         exit(1);
     }
-    
+
     CleanPolyBook();
-    
+
     unmute_stdout();
     printf("Polybook tests passed!\n");
     return 0;

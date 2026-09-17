@@ -4,16 +4,16 @@
  */
 
 #include "movegen.h"
-#include "sliding.h"
-#include "knights.h"
 #include "kings.h"
+#include "knights.h"
+#include "sliding.h"
 
 /**
  * @brief Internal helper to add a move to the move list.
  * @param list Pointer to the MoveList.
  * @param move The packed 32-bit move.
  */
-static void add_move(MoveList *list, uint32_t move) {
+static void add_move(MoveList* list, uint32_t move) {
     list->moves[list->count].move = move;
     list->moves[list->count].score = 0;
     list->count++;
@@ -26,28 +26,37 @@ static void add_move(MoveList *list, uint32_t move) {
  * @param side The side that is potentially attacking the square.
  * @return true if the square is attacked, false otherwise.
  */
-bool is_square_attacked(const Board *pos, int sq, int side) {
+bool is_square_attacked(const Board* pos, int sq, int side) {
     // Pawns
     if (side == white) {
-        if (arrbPawnAttacks[sq] & pos->bitboards[wp]) return true;
+        if (arrbPawnAttacks[sq] & pos->bitboards[wp])
+            return true;
     } else {
-        if (arrwPawnAttacks[sq] & pos->bitboards[bp]) return true;
+        if (arrwPawnAttacks[sq] & pos->bitboards[bp])
+            return true;
     }
     // Knights
-    if (arrKnightAttacks[sq] & ((side == white) ? pos->bitboards[wn] : pos->bitboards[bn])) return true;
+    if (arrKnightAttacks[sq] & ((side == white) ? pos->bitboards[wn] : pos->bitboards[bn]))
+        return true;
     // Kings
-    if (arrKingAttacks[sq] & ((side == white) ? pos->bitboards[wk] : pos->bitboards[bk])) return true;
-    
+    if (arrKingAttacks[sq] & ((side == white) ? pos->bitboards[wk] : pos->bitboards[bk]))
+        return true;
+
     // Sliders (Rooks, Bishops, Queens)
     U64 occ = 0ULL;
-    for(int p=wp; p<=bk; p++) occ |= pos->bitboards[p];
-    
-    U64 rooks_queens = (side == white) ? (pos->bitboards[wr] | pos->bitboards[wq]) : (pos->bitboards[br] | pos->bitboards[bq]);
-    if (get_rook_attacks(sq, occ) & rooks_queens) return true;
-    
-    U64 bishops_queens = (side == white) ? (pos->bitboards[wb] | pos->bitboards[wq]) : (pos->bitboards[bb] | pos->bitboards[bq]);
-    if (get_bishop_attacks(sq, occ) & bishops_queens) return true;
-    
+    for (int p = wp; p <= bk; p++)
+        occ |= pos->bitboards[p];
+
+    U64 rooks_queens = (side == white) ? (pos->bitboards[wr] | pos->bitboards[wq])
+                                       : (pos->bitboards[br] | pos->bitboards[bq]);
+    if (get_rook_attacks(sq, occ) & rooks_queens)
+        return true;
+
+    U64 bishops_queens = (side == white) ? (pos->bitboards[wb] | pos->bitboards[wq])
+                                         : (pos->bitboards[bb] | pos->bitboards[bq]);
+    if (get_bishop_attacks(sq, occ) & bishops_queens)
+        return true;
+
     return false;
 }
 
@@ -56,19 +65,22 @@ bool is_square_attacked(const Board *pos, int sq, int side) {
  * @param pos Pointer to the Board structure.
  * @param list Pointer to the MoveList to populate.
  */
-void generate_all_moves(const Board *pos, MoveList *list) {
+void generate_all_moves(const Board* pos, MoveList* list) {
     list->count = 0;
     int side = pos->side;
-    
+
     U64 occ = 0ULL;
-    for(int p=wp; p<=bk; p++) occ |= pos->bitboards[p];
-    
+    for (int p = wp; p <= bk; p++)
+        occ |= pos->bitboards[p];
+
     U64 enemy_occ = 0ULL;
     int enemy_side = (side == white) ? black : white;
-    for(int p = (enemy_side == white ? wp : bp); p <= (enemy_side == white ? wk : bk); p++) enemy_occ |= pos->bitboards[p];
-    
+    for (int p = (enemy_side == white ? wp : bp); p <= (enemy_side == white ? wk : bk); p++)
+        enemy_occ |= pos->bitboards[p];
+
     U64 friendly_occ = 0ULL;
-    for(int p = (side == white ? wp : bp); p <= (side == white ? wk : bk); p++) friendly_occ |= pos->bitboards[p];
+    for (int p = (side == white ? wp : bp); p <= (side == white ? wk : bk); p++)
+        friendly_occ |= pos->bitboards[p];
 
     U64 empty = ~occ;
 
@@ -76,7 +88,7 @@ void generate_all_moves(const Board *pos, MoveList *list) {
         U64 pawns = pos->bitboards[wp];
         U64 single_push = (pawns << 8) & empty;
         U64 double_push = ((single_push & 0x0000000000FF0000ULL) << 8) & empty;
-        
+
         U64 temp_push = single_push;
         while (temp_push) {
             int to = pop_lsb(&temp_push);
@@ -86,7 +98,8 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(from, to, EMPTY, wb, 0));
                 add_move(list, MOVE(from, to, EMPTY, wr, 0));
                 add_move(list, MOVE(from, to, EMPTY, wq, 0));
-            } else add_move(list, MOVE(from, to, EMPTY, EMPTY, 0));
+            } else
+                add_move(list, MOVE(from, to, EMPTY, EMPTY, 0));
         }
         while (double_push) {
             int to = pop_lsb(&double_push);
@@ -101,7 +114,8 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(to - 7, to, cap, wb, MFLAG_CAP));
                 add_move(list, MOVE(to - 7, to, cap, wr, MFLAG_CAP));
                 add_move(list, MOVE(to - 7, to, cap, wq, MFLAG_CAP));
-            } else add_move(list, MOVE(to - 7, to, cap, EMPTY, MFLAG_CAP));
+            } else
+                add_move(list, MOVE(to - 7, to, cap, EMPTY, MFLAG_CAP));
         }
         U64 right_caps = (pawns << 9) & enemy_occ & notAFile;
         while (right_caps) {
@@ -112,19 +126,22 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(to - 9, to, cap, wb, MFLAG_CAP));
                 add_move(list, MOVE(to - 9, to, cap, wr, MFLAG_CAP));
                 add_move(list, MOVE(to - 9, to, cap, wq, MFLAG_CAP));
-            } else add_move(list, MOVE(to - 9, to, cap, EMPTY, MFLAG_CAP));
+            } else
+                add_move(list, MOVE(to - 9, to, cap, EMPTY, MFLAG_CAP));
         }
         if (pos->enpassant != NO_SQ) {
             if ((pawns << 7) & (1ULL << pos->enpassant) & notHFile)
-                add_move(list, MOVE(pos->enpassant - 7, pos->enpassant, bp, EMPTY, MFLAG_EP | MFLAG_CAP));
+                add_move(list,
+                         MOVE(pos->enpassant - 7, pos->enpassant, bp, EMPTY, MFLAG_EP | MFLAG_CAP));
             if ((pawns << 9) & (1ULL << pos->enpassant) & notAFile)
-                add_move(list, MOVE(pos->enpassant - 9, pos->enpassant, bp, EMPTY, MFLAG_EP | MFLAG_CAP));
+                add_move(list,
+                         MOVE(pos->enpassant - 9, pos->enpassant, bp, EMPTY, MFLAG_EP | MFLAG_CAP));
         }
     } else {
         U64 pawns = pos->bitboards[bp];
         U64 single_push = (pawns >> 8) & empty;
         U64 double_push = ((single_push & 0x0000FF0000000000ULL) >> 8) & empty;
-        
+
         U64 temp_push = single_push;
         while (temp_push) {
             int to = pop_lsb(&temp_push);
@@ -134,7 +151,8 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(from, to, EMPTY, bb, 0));
                 add_move(list, MOVE(from, to, EMPTY, br, 0));
                 add_move(list, MOVE(from, to, EMPTY, bq, 0));
-            } else add_move(list, MOVE(from, to, EMPTY, EMPTY, 0));
+            } else
+                add_move(list, MOVE(from, to, EMPTY, EMPTY, 0));
         }
         temp_push = double_push;
         while (temp_push) {
@@ -150,7 +168,8 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(to + 9, to, cap, bb, MFLAG_CAP));
                 add_move(list, MOVE(to + 9, to, cap, br, MFLAG_CAP));
                 add_move(list, MOVE(to + 9, to, cap, bq, MFLAG_CAP));
-            } else add_move(list, MOVE(to + 9, to, cap, EMPTY, MFLAG_CAP));
+            } else
+                add_move(list, MOVE(to + 9, to, cap, EMPTY, MFLAG_CAP));
         }
         U64 right_caps = (pawns >> 7) & enemy_occ & notAFile;
         while (right_caps) {
@@ -161,13 +180,16 @@ void generate_all_moves(const Board *pos, MoveList *list) {
                 add_move(list, MOVE(to + 7, to, cap, bb, MFLAG_CAP));
                 add_move(list, MOVE(to + 7, to, cap, br, MFLAG_CAP));
                 add_move(list, MOVE(to + 7, to, cap, bq, MFLAG_CAP));
-            } else add_move(list, MOVE(to + 7, to, cap, EMPTY, MFLAG_CAP));
+            } else
+                add_move(list, MOVE(to + 7, to, cap, EMPTY, MFLAG_CAP));
         }
         if (pos->enpassant != NO_SQ) {
             if ((pawns >> 9) & (1ULL << pos->enpassant) & notHFile)
-                add_move(list, MOVE(pos->enpassant + 9, pos->enpassant, wp, EMPTY, MFLAG_EP | MFLAG_CAP));
+                add_move(list,
+                         MOVE(pos->enpassant + 9, pos->enpassant, wp, EMPTY, MFLAG_EP | MFLAG_CAP));
             if ((pawns >> 7) & (1ULL << pos->enpassant) & notAFile)
-                add_move(list, MOVE(pos->enpassant + 7, pos->enpassant, wp, EMPTY, MFLAG_EP | MFLAG_CAP));
+                add_move(list,
+                         MOVE(pos->enpassant + 7, pos->enpassant, wp, EMPTY, MFLAG_EP | MFLAG_CAP));
         }
     }
 
@@ -270,7 +292,8 @@ static void print_move_short(uint32_t move) {
     if (GET_PROMOTED(move) != EMPTY) {
         char piece_char[] = "pnbrqk";
         int p = GET_PROMOTED(move);
-        if (p >= bp) p -= 6;
+        if (p >= bp)
+            p -= 6;
         printf("%c", piece_char[p]);
     }
 }
@@ -280,12 +303,13 @@ static void print_move_short(uint32_t move) {
  * @param pos Pointer to the Board structure.
  * @param depth The depth to search.
  */
-void perft_divide(Board *pos, int depth) {
+void perft_divide(Board* pos, int depth) {
     MoveList list;
     generate_all_moves(pos, &list);
     long long total_nodes = 0;
     for (int i = 0; i < list.count; i++) {
-        if (!make_move(pos, list.moves[i].move)) continue;
+        if (!make_move(pos, list.moves[i].move))
+            continue;
         long long nodes = perft_test(pos, depth - 1);
         unmake_move(pos);
         total_nodes += nodes;
@@ -301,13 +325,15 @@ void perft_divide(Board *pos, int depth) {
  * @param depth The depth to search.
  * @return Total number of nodes reached.
  */
-long long perft_test(Board *pos, int depth) {
-    if (depth == 0) return 1ULL;
+long long perft_test(Board* pos, int depth) {
+    if (depth == 0)
+        return 1ULL;
     MoveList list;
     generate_all_moves(pos, &list);
     long long nodes = 0;
     for (int i = 0; i < list.count; i++) {
-        if (!make_move(pos, list.moves[i].move)) continue;
+        if (!make_move(pos, list.moves[i].move))
+            continue;
         nodes += perft_test(pos, depth - 1);
         unmake_move(pos);
     }

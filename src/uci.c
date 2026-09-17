@@ -4,17 +4,17 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
-    #include <windows.h>
-    /* Windows timing using QueryPerformanceCounter */
-    static LARGE_INTEGER get_time_freq(void) {
-        LARGE_INTEGER freq;
-        QueryPerformanceFrequency(&freq);
-        return freq;
-    }
+#include <windows.h>
+/* Windows timing using QueryPerformanceCounter */
+static LARGE_INTEGER get_time_freq(void) {
+    LARGE_INTEGER freq;
+    QueryPerformanceFrequency(&freq);
+    return freq;
+}
 
-    static LARGE_INTEGER last_time;
+static LARGE_INTEGER last_time;
 #else
-    #include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 long long get_time_ms(void) {
@@ -45,10 +45,22 @@ char* move_to_string(uint32_t move) {
     if (promoted != EMPTY) {
         char pchar = ' ';
         switch (promoted) {
-            case wn: case bn: pchar = 'n'; break;
-            case wb: case bb: pchar = 'b'; break;
-            case wr: case br: pchar = 'r'; break;
-            case wq: case bq: pchar = 'q'; break;
+        case wn:
+        case bn:
+            pchar = 'n';
+            break;
+        case wb:
+        case bb:
+            pchar = 'b';
+            break;
+        case wr:
+        case br:
+            pchar = 'r';
+            break;
+        case wq:
+        case bq:
+            pchar = 'q';
+            break;
         }
         move_str[4] = pchar;
         move_str[5] = '\0';
@@ -57,11 +69,15 @@ char* move_to_string(uint32_t move) {
     return move_str;
 }
 
-uint32_t parse_move(char *ptr, Board *board) {
-    if (ptr[1] > '8' || ptr[1] < '1') return 0;
-    if (ptr[0] > 'h' || ptr[0] < 'a') return 0;
-    if (ptr[3] > '8' || ptr[3] < '1') return 0;
-    if (ptr[2] > 'h' || ptr[2] < 'a') return 0;
+uint32_t parse_move(char* ptr, Board* board) {
+    if (ptr[1] > '8' || ptr[1] < '1')
+        return 0;
+    if (ptr[0] > 'h' || ptr[0] < 'a')
+        return 0;
+    if (ptr[3] > '8' || ptr[3] < '1')
+        return 0;
+    if (ptr[2] > 'h' || ptr[2] < 'a')
+        return 0;
 
     uint32_t from = (ptr[1] - '1') * 8 + (ptr[0] - 'a');
     uint32_t to = (ptr[3] - '1') * 8 + (ptr[2] - 'a');
@@ -74,10 +90,14 @@ uint32_t parse_move(char *ptr, Board *board) {
         if (GET_FROM(move) == from && GET_TO(move) == to) {
             int promoted = GET_PROMOTED(move);
             if (promoted != EMPTY) {
-                if (ptr[4] == 'n' && (promoted == wn || promoted == bn)) return move;
-                if (ptr[4] == 'b' && (promoted == wb || promoted == bb)) return move;
-                if (ptr[4] == 'r' && (promoted == wr || promoted == br)) return move;
-                if (ptr[4] == 'q' && (promoted == wq || promoted == bq)) return move;
+                if (ptr[4] == 'n' && (promoted == wn || promoted == bn))
+                    return move;
+                if (ptr[4] == 'b' && (promoted == wb || promoted == bb))
+                    return move;
+                if (ptr[4] == 'r' && (promoted == wr || promoted == br))
+                    return move;
+                if (ptr[4] == 'q' && (promoted == wq || promoted == bq))
+                    return move;
                 continue;
             }
             return move;
@@ -87,9 +107,9 @@ uint32_t parse_move(char *ptr, Board *board) {
     return 0;
 }
 
-void parse_position(char *line, Board *board) {
+void parse_position(char* line, Board* board) {
     line += 9; // Skip "position "
-    char *ptr = line;
+    char* ptr = line;
 
     if (strncmp(line, "startpos", 8) == 0) {
         parse_fen(startFEN, board);
@@ -108,10 +128,13 @@ void parse_position(char *line, Board *board) {
         ptr += 6;
         while (*ptr) {
             uint32_t move = parse_move(ptr, board);
-            if (move == 0) break;
+            if (move == 0)
+                break;
             make_move(board, move);
-            while (*ptr && *ptr != ' ') ptr++;
-            if (*ptr == ' ') ptr++;
+            while (*ptr && *ptr != ' ')
+                ptr++;
+            if (*ptr == ' ')
+                ptr++;
         }
     }
 }
@@ -134,8 +157,10 @@ void uci_loop() {
     setbuf(stdout, NULL);
 
     while (1) {
-        if (!fgets(line, sizeof(line), stdin)) break;
-        if (line[0] == '\n') continue;
+        if (!fgets(line, sizeof(line), stdin))
+            break;
+        if (line[0] == '\n')
+            continue;
 
         if (strncmp(line, "uci", 3) == 0) {
             printf("id name chessNova\n");
@@ -150,27 +175,38 @@ void uci_loop() {
         } else if (strncmp(line, "ucinewgame", 10) == 0) {
             parse_fen(startFEN, &board);
         } else if (strncmp(line, "setoption", 9) == 0) {
-            char *name = strstr(line, "name");
-            char *value = strstr(line, "value");
+            char* name = strstr(line, "name");
+            char* value = strstr(line, "value");
             if (name && value) {
                 name += 5;
-                char *end = strstr(name, "value");
-                if (end) *end = '\0';
+                char* end = strstr(name, "value");
+                if (end)
+                    *end = '\0';
 
                 /* Trim whitespace from name */
-                while(*name == ' ') name++;
-                char *n_end = name + strlen(name) - 1;
-                while(n_end > name && *n_end == ' ') { *n_end = '\0'; n_end--; }
+                while (*name == ' ')
+                    name++;
+                char* n_end = name + strlen(name) - 1;
+                while (n_end > name && *n_end == ' ') {
+                    *n_end = '\0';
+                    n_end--;
+                }
 
                 value += 6;
                 /* Trim whitespace from value */
-                while(*value == ' ') value++;
-                char *v_end = value + strlen(value) - 1;
-                while(v_end > value && (*v_end == ' ' || *v_end == '\n' || *v_end == '\r')) { *v_end = '\0'; v_end--; }
+                while (*value == ' ')
+                    value++;
+                char* v_end = value + strlen(value) - 1;
+                while (v_end > value && (*v_end == ' ' || *v_end == '\n' || *v_end == '\r')) {
+                    *v_end = '\0';
+                    v_end--;
+                }
 
                 if (strcmp(name, "OwnBook") == 0) {
-                    if (strcmp(value, "true") == 0) use_book = true;
-                    else if (strcmp(value, "false") == 0) use_book = false;
+                    if (strcmp(value, "true") == 0)
+                        use_book = true;
+                    else if (strcmp(value, "false") == 0)
+                        use_book = false;
                 } else if (strcmp(name, "BookFile") == 0) {
                     strncpy(book_file_path, value, 255);
                 }
@@ -193,17 +229,24 @@ void uci_loop() {
             int inc = 0;
             int movestogo = 30;
 
-            char *ptr = NULL;
+            char* ptr = NULL;
             if ((ptr = strstr(line, "infinite"))) {
                 info.infinite = 1;
             }
-            if ((ptr = strstr(line, "winc")) && board.side == white) inc = atoi(ptr + 5);
-            if ((ptr = strstr(line, "binc")) && board.side == black) inc = atoi(ptr + 5);
-            if ((ptr = strstr(line, "wtime")) && board.side == white) time = atoi(ptr + 6);
-            if ((ptr = strstr(line, "btime")) && board.side == black) time = atoi(ptr + 6);
-            if ((ptr = strstr(line, "movestogo"))) movestogo = atoi(ptr + 10);
-            if ((ptr = strstr(line, "movetime"))) movetime = atoi(ptr + 9);
-            if ((ptr = strstr(line, "depth"))) depth = atoi(ptr + 6);
+            if ((ptr = strstr(line, "winc")) && board.side == white)
+                inc = atoi(ptr + 5);
+            if ((ptr = strstr(line, "binc")) && board.side == black)
+                inc = atoi(ptr + 5);
+            if ((ptr = strstr(line, "wtime")) && board.side == white)
+                time = atoi(ptr + 6);
+            if ((ptr = strstr(line, "btime")) && board.side == black)
+                time = atoi(ptr + 6);
+            if ((ptr = strstr(line, "movestogo")))
+                movestogo = atoi(ptr + 10);
+            if ((ptr = strstr(line, "movetime")))
+                movetime = atoi(ptr + 9);
+            if ((ptr = strstr(line, "depth")))
+                depth = atoi(ptr + 6);
 
             if (movetime != -1) {
                 time = movetime;
@@ -217,7 +260,8 @@ void uci_loop() {
                 info.timeset = 1;
                 time /= movestogo;
                 time -= 50; // buffer
-                if (time < 0) time = 0;
+                if (time < 0)
+                    time = 0;
                 info.stoptime = info.starttime + time + inc;
             }
 

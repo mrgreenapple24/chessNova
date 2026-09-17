@@ -1,8 +1,8 @@
 #ifndef PAWNS_H
 #define PAWNS_H
 
-#include "types.h"
 #include "bitboard.h"
+#include "types.h"
 
 // push
 
@@ -10,10 +10,10 @@ U64 wSinglePushTargets(U64 wpawns, U64 empty);
 U64 bSinglePushTargets(U64 bpawns, U64 empty);
 U64 wDblPushTargets(U64 wpawns, U64 empty);
 U64 bDblPushTargets(U64 bpawns, U64 empty);
-void push_white_pawn(U64 white_pawn, Board *board);
-void push_dwhite_pawn(U64 pawn, Board *board);
-void push_black_pawn(U64 black_pawn, Board *board);
-void push_dblack_pawn(U64 pawn, Board *board);
+void push_white_pawn(U64 white_pawn, Board* board);
+void push_dwhite_pawn(U64 pawn, Board* board);
+void push_black_pawn(U64 black_pawn, Board* board);
+void push_dblack_pawn(U64 pawn, Board* board);
 
 U64 wPawnsAble2Push(U64 wpawns, U64 empty);
 U64 bPawnsAble2Push(U64 bpawns, U64 empty);
@@ -70,11 +70,11 @@ U64 bPawnDefendedFromEast(U64 bpawns);
 
 U64 pawnsWithEastNeighbors(U64 pawns);
 U64 pawnsWithWestNeighbors(U64 pawns);
-U64 duo (U64 pawns);
+U64 duo(U64 pawns);
 U64 northFill(U64 wpawns);
 U64 southFill(U64 bpawns);
 U64 fileFill(U64 pawns);
-U64 closedFiles(U64 wpawns,U64 bpawns);
+U64 closedFiles(U64 wpawns, U64 bpawns);
 U64 openFiles(U64 wpanws, U64 bpawns);
 
 extern U64 arrwPawnAttacks[64];
@@ -85,8 +85,8 @@ U64 bRearspans(U64 wpawns);
 U64 wRearspans(U64 wpawns);
 U64 bFrontspans(U64 wpawns);
 
-U64 eastAttackFileFill (U64 pawns);
-U64 westAttackFileFill (U64 pawns);
+U64 eastAttackFileFill(U64 pawns);
+U64 westAttackFileFill(U64 pawns);
 
 uint8_t fileSet(U64 pawns);
 uint8_t islandsEastfiles(U64 pawns);
@@ -94,13 +94,13 @@ uint8_t islandsWestfiles(U64 pawns);
 uint8_t isolatedFiles(U64 pawns);
 int countIslands(U64 pawns);
 U64 wPawnsBehindOwn(U64 wpawns);
-U64 wPawnsInfrontOwn (U64 wpawns);
-U64 wPawnsInfrontAndBehindOwn (U64 wpawns);
-U64 bPawnsBehindOwn (U64 bpawns);
-U64 bPawnsInfrontOwn (U64 bpawns);
-U64 bPawnsInfrontAndBehindOwn (U64 bpawns);
-U64 noNeighbourOnEastFile (U64 pawns);
-U64 noNeighbourOnWestFile (U64 pawns);
+U64 wPawnsInfrontOwn(U64 wpawns);
+U64 wPawnsInfrontAndBehindOwn(U64 wpawns);
+U64 bPawnsBehindOwn(U64 bpawns);
+U64 bPawnsInfrontOwn(U64 bpawns);
+U64 bPawnsInfrontAndBehindOwn(U64 bpawns);
+U64 noNeighbourOnEastFile(U64 pawns);
+U64 noNeighbourOnWestFile(U64 pawns);
 U64 isolanis(U64 pawns);
 U64 halfIsolanis(U64 pawns);
 U64 wOpenPawns(U64 wpawns, U64 bpawns);

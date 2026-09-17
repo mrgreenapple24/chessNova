@@ -1,11 +1,11 @@
 #ifndef SLIDING_H
 #define SLIDING_H
-#include "types.h"
 #include "bitboard.h"
+#include "types.h"
 
 /* Magic Bitboard Structures */
 typedef struct {
-    U64 *attacks;
+    U64* attacks;
     U64 mask;
     U64 magic;
     int shift;

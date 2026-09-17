@@ -1,48 +1,64 @@
 name: Cross-Platform Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
 
 jobs:
   build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             cc: gcc
-            cxx: g++
+            generator: Ninja
           - os: macos-latest
             cc: clang
-            cxx: clang++
+            generator: Ninja
           - os: windows-latest
             cc: cl
-            cxx: cl
+            generator: Ninja
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup MSVC (Windows)
+      # --- Windows: put MSVC (cl.exe) on PATH ---
+      - name: Setup MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
+      # --- Linux: install Ninja (macOS & Windows runners already have it) ---
+      - name: Install Ninja (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      # --- ccache: speeds up rebuilds across runs ---
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}-${{ matrix.cc }}
+
+      # --- Configure ---
       - name: Configure CMake
-        run: |
-          mkdir build
-          cd build
-          cmake .. -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
-        shell: bash
+        run: >
+          cmake -S . -B build
+          -G "${{ matrix.generator }}"
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_C_COMPILER=${{ matrix.cc }}
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
 
+      # --- Build ---
       - name: Build
-        run: |
-          cd build
-          cmake --build . --config Release --parallel
-        shell: bash
+        run: cmake --build build --parallel
 
+      # --- Test ---
       - name: Test
-        run: |
-          cd build
-          ctest --output-on-failure -C Release
-        shell: bash
+        run: ctest --test-dir build --output-on-failure
