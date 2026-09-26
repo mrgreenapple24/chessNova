@@ -145,6 +145,7 @@ void ensure_initialized() {
     if (!initialized) {
         init_magics();
         init_evaluation_masks();
+        InitPolyBook();
         initialized = 1;
     }
 }

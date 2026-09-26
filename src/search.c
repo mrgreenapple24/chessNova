@@ -277,7 +277,7 @@ uint32_t search_best_move(Board* board, SearchInfo* info) {
     info->stopped = 0;
     info->nodes = 0;
 
-    uint32_t book_move = get_polyglot_move(board);
+    uint32_t book_move = GetBookMove(board);
     if (book_move != 0) {
         return book_move;
     }
