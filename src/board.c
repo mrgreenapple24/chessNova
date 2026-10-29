@@ -236,6 +236,8 @@ void parse_fen(const char* fen, Board* board) {
     for (int p = bp; p <= bk; p++)
         board->occupancies[black] |= board->bitboards[p];
     board->occupancies[both] = board->occupancies[white] | board->occupancies[black];
+
+    board->posKey = generate_pos_key(board);
 }
 
 /**
@@ -324,8 +326,6 @@ bool make_move(Board* board, uint32_t move) {
     if (board->enpassant != NO_SQ) {
         board->posKey ^= EnPassantKeys[board->enpassant % 8];
     }
-
-    board->posKey ^= CastleKeys[board->castle & 0xF];
 
     // Handle captures
     if (move & MFLAG_CAP) {
@@ -434,7 +434,6 @@ void unmake_move(Board* board) {
     board->castle = board->history[board->hisply].castle;
     board->enpassant = board->history[board->hisply].enpassant;
     board->fiftyMove = board->history[board->hisply].fiftyMove;
-    board->posKey = board->history[board->hisply].posKey;
     board->side = side;
 
     int piece = get_piece_at(board, to);
@@ -479,6 +478,8 @@ void unmake_move(Board* board) {
             break;
         }
     }
+
+    board->posKey = board->history[board->hisply].posKey;
 }
 
 /**

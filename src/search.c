@@ -104,6 +104,13 @@ static int quiescence(Board* board, SearchInfo* info, int alpha, int beta) {
     }
     info->nodes++;
 
+    if (board->ply > info->seldepth) {
+        info->seldepth = board->ply;
+    }
+    if (board->ply < 64) {
+        info->pv_length[board->ply] = board->ply;
+    }
+
     int stand_pat = evaluate(board);
     if (stand_pat >= beta)
         return beta;
@@ -152,6 +159,13 @@ static int alpha_beta(Board* board, SearchInfo* info, int depth, int alpha, int 
         check_up(info);
     }
     info->nodes++;
+
+    if (board->ply > info->seldepth) {
+        info->seldepth = board->ply;
+    }
+    if (board->ply < 64) {
+        info->pv_length[board->ply] = board->ply;
+    }
 
     // TT Probe
     int tt_score = 0;
@@ -257,6 +271,14 @@ static int alpha_beta(Board* board, SearchInfo* info, int depth, int alpha, int 
         if (score > alpha) {
             alpha = score;
             best_move = move;
+
+            if (board->ply < 64) {
+                info->pv_table[board->ply][board->ply] = move;
+                for (int j = board->ply + 1; j < info->pv_length[board->ply + 1] && j < 64; j++) {
+                    info->pv_table[board->ply][j] = info->pv_table[board->ply + 1][j];
+                }
+                info->pv_length[board->ply] = info->pv_length[board->ply + 1];
+            }
         }
     }
 
@@ -273,16 +295,92 @@ static int alpha_beta(Board* board, SearchInfo* info, int depth, int alpha, int 
     return alpha;
 }
 
+/**
+ * Extracts the Principal Variation line by following best moves stored in the TT.
+ * Validates each move's legality to prevent invalid lines or infinite cycles.
+ */
+static int get_pv_line(Board* board, uint32_t* pv, int max_depth) {
+    int count = 0;
+    U64 visited[64];
+
+    while (count < max_depth && count < 64) {
+        visited[count] = board->posKey;
+
+        uint32_t move = probe_tt_move(board->posKey);
+        if (move == 0) {
+            break;
+        }
+
+        // Verify that move is strictly legal in the current board position
+        MoveList list;
+        generate_all_moves(board, &list);
+        bool legal = false;
+        for (int i = 0; i < list.count; i++) {
+            uint32_t m = list.moves[i].move;
+            if (GET_FROM(m) == GET_FROM(move) && GET_TO(m) == GET_TO(move) &&
+                GET_PROMOTED(m) == GET_PROMOTED(move)) {
+                if (make_move(board, m)) {
+                    legal = true;
+                    move = m;
+                }
+                break;
+            }
+        }
+
+        if (!legal) {
+            break;
+        }
+
+        pv[count++] = move;
+
+        // Repetition / cycle check
+        bool cycle = false;
+        for (int i = 0; i < count; i++) {
+            if (visited[i] == board->posKey) {
+                cycle = true;
+                break;
+            }
+        }
+        if (cycle) {
+            break;
+        }
+    }
+
+    // Unmake moves in reverse order
+    for (int i = count - 1; i >= 0; i--) {
+        unmake_move(board);
+    }
+
+    return count;
+}
+
 uint32_t search_best_move(Board* board, SearchInfo* info) {
     info->stopped = 0;
     info->nodes = 0;
+    info->seldepth = 0;
+
+    if (PieceKeys[0][0] == 0) {
+        init_zobrist();
+    }
+    if (board->posKey == 0) {
+        board->posKey = generate_pos_key(board);
+    }
+
+    if (TT.pTable == NULL) {
+        init_tt(64);
+    }
 
     uint32_t book_move = GetBookMove(board);
     if (book_move != 0) {
+        printf("info depth 1 seldepth 1 score cp 0 time 0 nodes 0 nps 0 hashfull %d pv %s\n",
+               get_hashfull(), move_to_string(book_move));
+        fflush(stdout);
         return book_move;
     }
 
     uint32_t best_move = 0;
+    uint32_t depth_best_move = 0;
+    uint32_t root_tt_move = 0;
     int best_score = -INFINITY;
     int current_depth = 1;
 
@@ -290,11 +388,14 @@ uint32_t search_best_move(Board* board, SearchInfo* info) {
 
     memset(info->killer_moves, 0, sizeof(info->killer_moves));
     memset(info->history_moves, 0, sizeof(info->history_moves));
+    memset(info->pv_table, 0, sizeof(info->pv_table));
+    memset(info->pv_length, 0, sizeof(info->pv_length));
 
     increment_tt_age();
 
     for (current_depth = 1; current_depth <= info->depth; current_depth++) {
-        uint32_t root_tt_move = 0;
+        info->seldepth = current_depth;
+        root_tt_move = 0;
         int dummy_score = 0;
 
         // Probe TT for root move found in shallower iterations
@@ -308,7 +409,7 @@ uint32_t search_best_move(Board* board, SearchInfo* info) {
         generate_all_moves(board, &list);
         score_moves(info, &list, board, root_tt_move);
 
-        uint32_t depth_best_move = 0;
+        depth_best_move = 0;
         int depth_best_score = -INFINITY;
         int alpha = -INFINITY;
         int beta = INFINITY;
@@ -347,6 +448,12 @@ uint32_t search_best_move(Board* board, SearchInfo* info) {
                 if (score > alpha) {
                     alpha = score;
                 }
+
+                info->pv_table[0][0] = move;
+                for (int j = 1; j < info->pv_length[1] && j < 64; j++) {
+                    info->pv_table[0][j] = info->pv_table[1][j];
+                }
+                info->pv_length[0] = info->pv_length[1];
             }
         }
 
@@ -360,12 +467,69 @@ uint32_t search_best_move(Board* board, SearchInfo* info) {
             store_tt(board->posKey, best_move, best_score, current_depth, TT_EXACT, 0);
         }
 
-        printf("info score cp %d depth %d nodes %llu time %llu\n", best_score, current_depth,
+        uint32_t pv[64];
+        int pv_count = get_pv_line(board, pv, current_depth);
+        if (pv_count == 0 && info->pv_length[0] > 0) {
+            for (int j = 0; j < info->pv_length[0] && j < 64; j++) {
+                pv[j] = info->pv_table[0][j];
+            }
+            pv_count = info->pv_length[0];
+        }
+        if (pv_count == 0 && best_move != 0) {
+            pv[0] = best_move;
+            pv_count = 1;
+        }
+
+        long long elapsed = (long long)get_time_ms() - (long long)info->starttime;
+        if (elapsed < 0)
+            elapsed = 0;
+        unsigned long long nps =
+            (elapsed > 0) ? ((unsigned long long)info->nodes * 1000 / (unsigned long long)elapsed)
+                          : ((unsigned long long)info->nodes * 1000);
+
+        printf("info depth %d seldepth %d score ", current_depth, info->seldepth);
+        if (best_score > MATE_SCORE - 1000) {
+            int mate_in_moves = (MATE_SCORE - best_score + 1) / 2;
+            printf("mate %d ", mate_in_moves);
+        } else if (best_score < -MATE_SCORE + 1000) {
+            int mate_in_moves = -(MATE_SCORE + best_score + 1) / 2;
+            printf("mate %d ", mate_in_moves);
+        } else {
+            printf("cp %d ", best_score);
+        }
+
+        printf("nodes %llu nps %llu time %llu hashfull %d pv",
                (unsigned long long)info->nodes,
-               (unsigned long long)get_time_ms() - (unsigned long long)info->starttime);
+               nps,
+               (unsigned long long)elapsed,
+               get_hashfull());
+
+        for (int i = 0; i < pv_count; i++) {
+            printf(" %s", move_to_string(pv[i]));
+        }
+        printf("\n");
+        fflush(stdout);
 
         if (best_score > MATE_SCORE - 1000 || best_score < -MATE_SCORE + 1000)
             break;
+    }
+
+    if (best_move == 0) {
+        if (depth_best_move != 0) {
+            best_move = depth_best_move;
+        } else if (root_tt_move != 0) {
+            best_move = root_tt_move;
+        } else {
+            MoveList list;
+            generate_all_moves(board, &list);
+            for (int i = 0; i < list.count; i++) {
+                if (make_move(board, list.moves[i].move)) {
+                    unmake_move(board);
+                    best_move = list.moves[i].move;
+                    break;
+                }
+            }
+        }
     }
 
     return best_move;

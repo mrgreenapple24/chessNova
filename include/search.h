@@ -30,8 +30,13 @@ typedef struct {
     int quit;
     int stopped;
 
+    int seldepth;
+
     uint32_t killer_moves[2][MAX_PLY];
     int history_moves[12][64];
+
+    uint32_t pv_table[64][64];
+    int pv_length[64];
 } SearchInfo;
 
 /**

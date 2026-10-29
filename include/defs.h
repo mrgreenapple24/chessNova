@@ -12,6 +12,7 @@
 #include "sliding.h"
 #include "types.h"
 #include "uci.h"
+#include "zobrist.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,5 +1,6 @@
 #include "defs.h"
 #include "polyglot.h"
+#include "tt.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,6 +33,10 @@ long long get_time_ms(void) {
 
 char* move_to_string(uint32_t move) {
     static char move_str[6];
+    if (move == 0) {
+        strcpy(move_str, "none");
+        return move_str;
+    }
     int from = GET_FROM(move);
     int to = GET_TO(move);
     int promoted = GET_PROMOTED(move);
@@ -143,14 +148,19 @@ static int initialized = 0;
 
 void ensure_initialized() {
     if (!initialized) {
+        init_zobrist();
         init_magics();
         init_evaluation_masks();
         InitPolyBook();
+        if (TT.pTable == NULL) {
+            init_tt(64);
+        }
         initialized = 1;
     }
 }
 
 void uci_loop() {
+    ensure_initialized();
     char line[2048];
     Board board;
     parse_fen(startFEN, &board);
@@ -166,60 +176,75 @@ void uci_loop() {
         if (strncmp(line, "uci", 3) == 0) {
             printf("id name chessNova\n");
             printf("id author Mrgreenapple24\n");
+            printf("option name Hash type spin default 64 min 1 max 1024\n");
+            printf("option name Clear Hash type button\n");
+            printf("option name OwnBook type check default true\n");
+            printf("option name BookFile type string default book.bin\n");
             printf("uciok\n");
+            fflush(stdout);
         } else if (strncmp(line, "isready", 7) == 0) {
             ensure_initialized();
             printf("readyok\n");
+            fflush(stdout);
         } else if (strncmp(line, "position", 8) == 0) {
             ensure_initialized();
             parse_position(line, &board);
         } else if (strncmp(line, "ucinewgame", 10) == 0) {
+            ensure_initialized();
+            clear_tt();
             parse_fen(startFEN, &board);
         } else if (strncmp(line, "setoption", 9) == 0) {
             char* name = strstr(line, "name");
             char* value = strstr(line, "value");
-            if (name && value) {
+            if (name) {
                 name += 5;
-                char* end = strstr(name, "value");
-                if (end)
-                    *end = '\0';
+                if (value) {
+                    char* end = strstr(name, "value");
+                    if (end)
+                        *end = '\0';
+                }
 
                 /* Trim whitespace from name */
                 while (*name == ' ')
                     name++;
                 char* n_end = name + strlen(name) - 1;
-                while (n_end > name && *n_end == ' ') {
+                while (n_end > name && (*n_end == ' ' || *n_end == '\n' || *n_end == '\r')) {
                     *n_end = '\0';
                     n_end--;
                 }
 
-                value += 6;
-                /* Trim whitespace from value */
-                while (*value == ' ')
-                    value++;
-                char* v_end = value + strlen(value) - 1;
-                while (v_end > value && (*v_end == ' ' || *v_end == '\n' || *v_end == '\r')) {
-                    *v_end = '\0';
-                    v_end--;
+                if (value) {
+                    value += 6;
+                    /* Trim whitespace from value */
+                    while (*value == ' ')
+                        value++;
+                    char* v_end = value + strlen(value) - 1;
+                    while (v_end > value && (*v_end == ' ' || *v_end == '\n' || *v_end == '\r')) {
+                        *v_end = '\0';
+                        v_end--;
+                    }
                 }
 
-                if (strcmp(name, "OwnBook") == 0) {
+                if (strcmp(name, "Hash") == 0 && value) {
+                    int mb = atoi(value);
+                    if (mb < 1)
+                        mb = 1;
+                    if (mb > 1024)
+                        mb = 1024;
+                    init_tt(mb);
+                } else if (strcmp(name, "Clear Hash") == 0) {
+                    clear_tt();
+                } else if (strcmp(name, "OwnBook") == 0 && value) {
                     if (strcmp(value, "true") == 0)
                         use_book = true;
                     else if (strcmp(value, "false") == 0)
                         use_book = false;
-                } else if (strcmp(name, "BookFile") == 0) {
+                } else if (strcmp(name, "BookFile") == 0 && value) {
                     strncpy(book_file_path, value, 255);
                 }
             }
         } else if (strncmp(line, "go", 2) == 0) {
             ensure_initialized();
-            /*
-            uint32_t book_move = get_polyglot_move(&board);
-            if (book_move != 0) {
-                printf("bestmove %s\n", move_to_string(book_move));
-                continue;
-            } */
 
             SearchInfo info;
             memset(&info, 0, sizeof(SearchInfo));
@@ -268,7 +293,9 @@ void uci_loop() {
 
             uint32_t move = search_best_move(&board, &info);
             printf("bestmove %s\n", move_to_string(move));
+            fflush(stdout);
         } else if (strncmp(line, "quit", 4) == 0) {
+            free_tt();
             break;
         }
     }
