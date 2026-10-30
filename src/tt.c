@@ -65,8 +65,11 @@ void increment_tt_age(void) {
 }
 
 bool probe_tt(U64 key, int depth, int alpha, int beta, int ply, int* score, uint32_t* move) {
-    if (!TT.pTable || TT.numEntries == 0 || key == 0)
+    if (!TT.pTable || TT.numEntries == 0 || key == 0) {
+        if (move)
+            *move = 0;
         return false;
+    }
 
     uint32_t index = (uint32_t)(key & (TT.numEntries - 1));
     TTEntry* entry = &TT.pTable[index];
@@ -92,11 +95,40 @@ bool probe_tt(U64 key, int depth, int alpha, int beta, int ply, int* score, uint
             }
         }
     } else {
-        if (move && *move == 0)
+        if (move)
             *move = 0;
     }
 
     return false;
+}
+
+uint32_t probe_tt_move(U64 key) {
+    if (!TT.pTable || TT.numEntries == 0 || key == 0)
+        return 0;
+
+    uint32_t index = (uint32_t)(key & (TT.numEntries - 1));
+    TTEntry* entry = &TT.pTable[index];
+
+    if (entry->key == key) {
+        return entry->move;
+    }
+    return 0;
+}
+
+int get_hashfull(void) {
+    if (!TT.pTable || TT.numEntries == 0)
+        return 0;
+
+    int sample_size = (TT.numEntries < 1000) ? (int)TT.numEntries : 1000;
+    int occupied = 0;
+
+    for (int i = 0; i < sample_size; i++) {
+        if (TT.pTable[i].key != 0) {
+            occupied++;
+        }
+    }
+
+    return (occupied * 1000) / sample_size;
 }
 
 void store_tt(U64 key, uint32_t move, int score, int depth, uint8_t flag, int ply) {

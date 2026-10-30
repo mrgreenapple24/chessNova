@@ -16,6 +16,7 @@
  * @return int Exit status.
  */
 int main() {
+    init_zobrist();
     init_magics();
     uci_loop();
 

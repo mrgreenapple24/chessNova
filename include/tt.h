@@ -56,6 +56,17 @@ void increment_tt_age(void);
 bool probe_tt(U64 key, int depth, int alpha, int beta, int ply, int* score, uint32_t* move);
 
 /**
+ * Retrieves the best move stored for the given key without cutoff evaluation.
+ * Returns 0 if key not found.
+ */
+uint32_t probe_tt_move(U64 key);
+
+/**
+ * Returns hash table utilization per mille (0 to 1000).
+ */
+int get_hashfull(void);
+
+/**
  * Stores a new search result entry into the TT using Depth-Preferred + Age replacement.
  */
 void store_tt(U64 key, uint32_t move, int score, int depth, uint8_t flag, int ply);
